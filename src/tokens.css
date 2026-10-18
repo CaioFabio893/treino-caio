@@ -1,0 +1,44 @@
+:root {
+  --bg: #101112;
+  --sidebar: #0c0d0e;
+  --panel: #17191b;
+  --panel-high: #1e2123;
+  --input: #222629;
+  --hero: #181d16;
+  --text: #f2f2ec;
+  --muted: #969d99;
+  --border: #2a2e2b;
+  --accent: #b9f14d;
+  --accent-hover: #cafa74;
+  --accent-dim: #b9f14d0c;
+  --accent-border: #b9f14d42;
+  --hover: #292e2a;
+  --warning: #d8a878;
+  --warning-dim: #d8a87815;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --bg: #f3f4ef;
+  --sidebar: #fff;
+  --panel: #fff;
+  --panel-high: #f0f2eb;
+  --input: #f7f8f3;
+  --hero: #eaf0de;
+  --text: #1b2416;
+  --muted: #5e6859;
+  --border: #d9dfd1;
+  --accent: #477800;
+  --accent-hover: #c7ec7e;
+  --accent-dim: #577d0c0d;
+  --accent-border: #6c942f77;
+  --hover: #e4e9db;
+  --warning: #8b4a17;
+  --warning-dim: #8b4a170d;
+  color-scheme: light;
+}
+:root[data-theme="light"] .primary,
+:root[data-theme="light"] .brand-icon,
+:root[data-theme="light"] .series-pills .done {
+  background: #c0e984;
+  color: #183000;
+}

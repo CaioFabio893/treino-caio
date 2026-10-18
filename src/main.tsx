@@ -1,0 +1,17 @@
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "@fontsource-variable/archivo";
+import "./styles.css";
+import App from "./App";
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);
+if ("serviceWorker" in navigator && import.meta.env.PROD)
+  window.addEventListener("load", () => {
+    void navigator.serviceWorker
+      .register("/sw.js")
+      .catch(() => console.warn("Cache offline indisponível."));
+  });

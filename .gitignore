@@ -1,0 +1,13 @@
+node_modules/
+dist/
+playwright-report/
+test-results/
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo
+*-debug.log
+.firebase/
+claude-original/
+*.zip
+firestore-debug.log
