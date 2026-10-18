@@ -380,13 +380,22 @@ export function startSession(
   now = Date.now(),
 ): Session {
   const date = new Date(now);
-  const key = sessionKey(state.profile, plan.week, plan.day);
-  const existing = state.sessions.find((s) => s.id === key);
-  if (existing) return existing;
-  if (state.sessions.some((s) => s.finishedAt === null))
-    throw new Error("Conclua a sessão em andamento antes de iniciar outra.");
+  // Retoma a sessão ativa deste mesmo treino (idempotente, sem duplicar).
+  const active = state.sessions.find(
+    (s) =>
+      s.finishedAt === null &&
+      s.plan.week === plan.week &&
+      s.plan.day === plan.day,
+  );
+  if (active) return active;
   if (!plan.valid)
     throw new Error("Plano excede 80 minutos e precisa de correção.");
+  // Treinos podem ser refeitos: cada início cria uma execução única do mesmo dia.
+  const run =
+    state.sessions.filter(
+      (s) => s.plan.week === plan.week && s.plan.day === plan.day,
+    ).length + 1;
+  const key = `${sessionKey(state.profile, plan.week, plan.day)}:r${run}`;
   return {
     id: key,
     date: dateKey(date),

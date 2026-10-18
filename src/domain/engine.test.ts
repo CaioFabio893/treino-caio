@@ -146,18 +146,28 @@ describe("sessões reais", () => {
       "2026-10-17",
     );
     expect(startSession(state(), makePlan(2, 1), MONDAY).id).toBe(
-      "2026-10-19:w2:d1",
+      "2026-10-19:w2:d1:r1",
     );
     expect(startSession(state(), makePlan(1, 2), MONDAY).id).toBe(
-      "2026-10-19:w1:d2",
+      "2026-10-19:w1:d2:r1",
     );
   });
-  it("retoma a mesma sessão e não abre duas ativas", () => {
+  it("retoma a sessão ativa e permite refazer treino concluído", () => {
     const s = state();
     const first = session();
     s.sessions = [first];
+    // Retoma a mesma sessão ativa sem duplicar.
     expect(startSession(s, makePlan(1, 1), MONDAY)).toEqual(first);
-    expect(() => startSession(s, makePlan(1, 2), MONDAY + 86400000)).toThrow();
+    // Pode abrir outro treino mesmo com um em andamento.
+    expect(startSession(s, makePlan(1, 2), MONDAY + 86400000).id).toBe(
+      "2026-10-19:w1:d2:r1",
+    );
+    // Refazer um treino concluído cria uma nova execução.
+    const done = { ...first, finishedAt: first.startedAt + 1800000 };
+    s.sessions = [done];
+    expect(startSession(s, makePlan(1, 1), MONDAY + 172800000).id).toBe(
+      "2026-10-19:w1:d1:r2",
+    );
   });
   it("primeiros 30 min de Pull bloqueiam força; limite exato libera", () => {
     const s = session();

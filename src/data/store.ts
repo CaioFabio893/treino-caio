@@ -147,8 +147,6 @@ export function decode(raw: string): AppState {
       )
         throw new Error("Decisão inválida.");
   }
-  if (x.sessions.filter((s) => s.finishedAt === null).length > 1)
-    throw new Error("Backup contém mais de uma sessão ativa.");
   for (const r of x.readiness)
     if (
       !record(r) ||

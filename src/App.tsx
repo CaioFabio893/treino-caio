@@ -163,15 +163,11 @@ export default function App() {
   }
   async function begin() {
     await run(async () => {
-      await commit((s) => {
-        const created = startSession(s, plan);
-        if (created.finishedAt)
-          throw new Error(
-            "Este treino já foi finalizado. Consulte o histórico; não criaremos outra sessão.",
-          );
-        return s.sessions.some((x) => x.id === created.id)
-          ? s
-          : { ...s, sessions: [...s.sessions, created] };
+       await commit((s) => {
+         const created = startSession(s, plan);
+         return s.sessions.some((x) => x.id === created.id)
+           ? s
+           : { ...s, sessions: [...s.sessions, created] };
       });
       go("treino");
     });
