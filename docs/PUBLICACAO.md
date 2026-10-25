@@ -1,3 +1,7 @@
+## %RM + RPE publicado — 25/10/2026
+
+Commit de código d36fe0b963f30592bda0aaa4c59d4ae9b867a3e9. Pipeline https://github.com/CaioFabio893/treino-caio/actions/runs/40231316455 concluiu com sucesso. Site https://caiofabio893.github.io/treino-caio/ e JS HTTP 200; bundle contém campos de RM atual e ação de recálculo. 52 testes unitários, types/lint/build e check estático passaram. Sem navegação/E2E/validação visual. Detalhes em CARGAS-RM-RPE.md. Firebase segue desativado; não houve acesso à Louise.
+
 ## Publicação concluída — 25/10/2026
 
 GitHub Actions confirmou sucesso: https://github.com/CaioFabio893/treino-caio/actions/runs/40230345362 . Código publicado: commit 5762fb82067f2227eb5c9315c92d403dc561c910. URL https://caiofabio893.github.io/treino-caio/ respondeu HTTP 200; JS/CSS responderam HTTP 200 e bundle contém program=oapu-strength-12w-v2 e nova ficha. Manifest relativo, worker versionado e lista offline conferidos por HTTP, sem browser. Hash do JS local Windows difere do build Linux do Actions; conferência de versão por commit do deploy e identificador do programa, não por igualdade byte a byte.
