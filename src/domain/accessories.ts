@@ -98,7 +98,18 @@ export function substitute(
       ...session.plan,
       exercises: session.plan.exercises.map((e) =>
         e.id === exerciseId
-          ? { ...e, id: variant[0], name: variant[1], load: null }
+          ? {
+              ...e,
+              id: variant[0],
+              name: variant[1],
+              load: null,
+              rm: undefined,
+              rmSource: undefined,
+              referenceBodyweight: undefined,
+              assistance: 0,
+              attempts: undefined,
+              note: "Variação nova: informe seu RM próprio no perfil ou defina a carga pelo RPE. Não transferir carga ou RM de outra máquina.",
+            }
           : e,
       ),
     },
@@ -193,7 +204,14 @@ export function accessoryProgression(
   if (
     sets.length !== prescription.sets ||
     (!e.progressive && sets.length < e.sets) ||
-    sets.some((s, i) => s.index !== i || !s.successful || s.load !== load)
+    sets.some(
+      (s, i) =>
+        s.index !== i ||
+        !s.successful ||
+        s.load !== load ||
+        (s.assistance ?? 0) > 0,
+    ) ||
+    (e.assistance ?? 0) > 0
   )
     return {
       ...base,

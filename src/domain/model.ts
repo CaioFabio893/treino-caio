@@ -15,6 +15,7 @@ export interface Profile {
   cycleStart: string;
   historical: Record<Lift | "bench", number>;
   trainingMax: Record<Lift, number | null>;
+  referenceRm?: Record<string, number>;
 }
 export interface Exercise {
   id: string;
@@ -33,6 +34,12 @@ export interface Exercise {
   perSide?: boolean;
   note?: string;
   progressive?: boolean;
+  percent?: number;
+  rm?: number;
+  rmSource?: "current" | "historical";
+  referenceBodyweight?: number;
+  assistance?: number;
+  attempts?: { percent: number; load: number; assistance: number }[];
 }
 export interface Plan {
   program?: string;
@@ -59,6 +66,7 @@ export interface SetLog {
   completedAt: number;
   successful: boolean;
   ready: boolean;
+  assistance?: number;
 }
 export interface OapuLog {
   id: string;
@@ -107,4 +115,5 @@ export interface Week {
   reps: number;
   rpe: number;
   label: string;
+  percent?: number;
 }

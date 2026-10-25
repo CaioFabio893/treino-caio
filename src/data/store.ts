@@ -49,6 +49,15 @@ export function decode(raw: string): AppState {
   )
     throw new Error("Máximos inválidos.");
   const ids = new Set<string>();
+  if (
+    p.referenceRm !== undefined &&
+    (!record(p.referenceRm) ||
+      Object.entries(p.referenceRm).some(
+        ([key, value]) =>
+          !/^[a-z][a-z0-9-]{0,60}$/.test(key) || !number(value, 0.1),
+      ))
+  )
+    throw new Error("RMs de planejamento inválidos.");
   for (const s of x.sessions) {
     if (
       !record(s) ||
@@ -92,6 +101,29 @@ export function decode(raw: string): AppState {
         typeof e.id !== "string" ||
         typeof e.name !== "string" ||
         !(e.progressive === undefined || typeof e.progressive === "boolean") ||
+        !(e.percent === undefined || number(e.percent, 0.1, 100)) ||
+        !(e.rm === undefined || number(e.rm, 0.1)) ||
+        !(
+          e.rmSource === undefined ||
+          ["current", "historical"].includes(String(e.rmSource))
+        ) ||
+        !(
+          e.referenceBodyweight === undefined ||
+          number(e.referenceBodyweight, 0, 400)
+        ) ||
+        !(e.assistance === undefined || number(e.assistance, 0, 400)) ||
+        !(
+          e.attempts === undefined ||
+          (Array.isArray(e.attempts) &&
+            e.attempts.length === 3 &&
+            e.attempts.every(
+              (a) =>
+                record(a) &&
+                number(a.percent, 0.1, 100) &&
+                number(a.load) &&
+                number(a.assistance, 0, 400),
+            ))
+        ) ||
         !number(e.sets, 1, 30) ||
         !number(e.reps, 1) ||
         !(e.repsMax === undefined || number(e.repsMax, Number(e.reps))) ||
@@ -117,6 +149,17 @@ export function decode(raw: string): AppState {
             number(set.index, 0, Number(e.sets) - 1),
         ) ||
         !number(set.load) ||
+        !(
+          set.assistance === undefined ||
+          (number(set.assistance, 0, Number(s.bodyweight)) &&
+            (set.assistance === 0 ||
+              (set.load === 0 &&
+                !plan.pr &&
+                plan.exercises.some(
+                  (e) =>
+                    record(e) && e.id === set.exerciseId && e.weighted === true,
+                ))))
+        ) ||
         !number(set.amount, 1) ||
         !number(set.rpe, 1, 10) ||
         !number(set.bodyweight, 20, 400) ||

@@ -51,7 +51,8 @@ export default function Performance({ state }: { state: AppState }) {
         (n, { set, exercise }) =>
           n +
           (exercise?.unit === "reps"
-            ? totalLoad(set.load, set.bodyweight, !!exercise.weighted) *
+            ? (totalLoad(set.load, set.bodyweight, !!exercise.weighted) -
+                (set.assistance ?? 0)) *
               set.amount
             : 0),
         0,
@@ -146,12 +147,17 @@ export default function Performance({ state }: { state: AppState }) {
           <p>Single bem-sucedido em PR Test</p>
         </section>
         <section className="card stat">
-          <span className="eyebrow">TRAINING MAX VALIDADO</span>
+          <span className="eyebrow">RM DE PLANEJAMENTO</span>
           <h3>
-            {lift === "bench" ? "—" : (state.profile.trainingMax[lift] ?? "—")}{" "}
+            {state.profile.referenceRm?.[lift] ??
+              state.profile.historical[lift]}{" "}
             <small>kg</small>
           </h3>
-          <p>Informado no perfil · não inferido</p>
+          <p>
+            {state.profile.referenceRm?.[lift] !== undefined
+              ? "RM informado no perfil"
+              : "Histórico provisório · confirme RM atual"}
+          </p>
         </section>
       </div>
       <section className="card">

@@ -1,3 +1,5 @@
+> Atualização vigente: cargas calculadas por %RM + RPE, com RMs atuais configuráveis e histórico identificado como provisório. Leia docs/CARGAS-RM-RPE.md (ou CARGAS-RM-RPE.md nesta pasta). As frases antigas sobre cargas sempre vazias foram substituídas por este pedido. Sem navegação/E2E.
+
 # Programação de 12 semanas — 25/10/2026
 
 ## Prioridades e sequência
@@ -33,7 +35,7 @@ Tabela para barra pesada, back squat, dip pesado e supino. Terra limitado a 3 s�
 | 11 | 2×2 | 6,5 | Taper |
 | 12 | Até 3×1 | 9 | Testes com prontidão |
 
-Mais intensidade aqui significa maior esforço relativo e menos reps, NÃO aumento garantido de quilos. Cargas iniciais vazias: definir pelo RPE atual, não pelos máximos históricos. Séries são de trabalho; aquecimento não incluído.
+Mais intensidade aqui significa maior esforço relativo e menos reps, NÃO aumento garantido de quilos. Cargas planejadas por %RM + RPE, conforme CARGAS-RM-RPE.md. Histórico sem RM atual é base provisória identificada, não um máximo atual confirmado. Séries são de trabalho; aquecimento não incluído.
 
 ## Volume, hipertrofia e unilateral
 - Barra de volume: S1–4 3×6–8; S5–8 3×5–7; S9–11 3×4–6, com 2 séries nos deloads/taper. RPE normal até 7,5; redução até 6.

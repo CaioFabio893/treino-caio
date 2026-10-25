@@ -1,4 +1,5 @@
-import type { Exercise, Plan, Week } from "./model";
+import type { Exercise, Plan, Profile, Week } from "./model";
+import { HEAVY_PERCENT, planLoads } from "./loads";
 import { varyAccessories } from "./accessories";
 
 export const PROGRAM_ID = "oapu-strength-12w-v2";
@@ -26,6 +27,7 @@ export const PROGRAM_WEEKS: Week[] = [
   reps: Number(row[1]),
   rpe: Number(row[2]),
   label: String(row[3]),
+  percent: HEAVY_PERCENT[i],
   phase:
     i < 4
       ? "Acumulação"
@@ -92,7 +94,11 @@ export function oapuProtocol(week: number, day: number) {
   };
 }
 
-export function makeProgramPlan(week: number, day: number): Plan {
+export function makeProgramPlan(
+  week: number,
+  day: number,
+  profile?: Profile,
+): Plan {
   if (
     !Number.isInteger(week) ||
     week < 1 ||
@@ -227,7 +233,7 @@ export function makeProgramPlan(week: number, day: number): Plan {
     )[day as 1 | 2 | 3 | 4 | 6];
     exercises = test ? [heavy(test[0], test[1], test[2])] : [];
   }
-  return {
+  const plan: Plan = {
     program: PROGRAM_ID,
     week,
     day,
@@ -247,4 +253,5 @@ export function makeProgramPlan(week: number, day: number): Plan {
     estimatedSeconds: 0,
     valid: true,
   };
+  return profile ? planLoads(plan, profile) : plan;
 }

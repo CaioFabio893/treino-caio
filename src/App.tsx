@@ -1,3 +1,4 @@
+import { loadDescription, planLoads } from "./domain/loads";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import {
   Activity,
@@ -169,7 +170,7 @@ export default function App() {
       s.id.startsWith(`${state.profile.cycleStart}:`) &&
       s.plan.program === PROGRAM_ID,
   );
-  const plan = makePlan(week, day);
+  const plan = makePlan(week, day, state.profile);
   const w = WEEKS[week - 1];
   useEffect(() => {
     try {
@@ -215,7 +216,7 @@ export default function App() {
   async function begin() {
     await run(async () => {
       await commit((s) => {
-        const created = startSession(s, plan);
+        const created = startSession(s, makePlan(week, day, s.profile));
         return s.sessions.some((x) => x.id === created.id)
           ? s
           : { ...s, sessions: [...s.sessions, created] };
@@ -674,7 +675,7 @@ export default function App() {
                   {TRAINING_DAYS.map((index) => (
                     <PlanPreview
                       key={index}
-                      plan={makePlan(week, index)}
+                      plan={makePlan(week, index, state.profile)}
                       onOpen={() => {
                         setDay(index);
                         setShowAll(false);
@@ -735,7 +736,9 @@ export default function App() {
                           ? "Até 3 tentativas"
                           : `${wk.sets} × ${wk.reps}`}
                       </strong>
-                      <span>RPE ≤ {wk.rpe}</span>
+                      <span>
+                        {wk.percent}% RM · RPE ≤ {wk.rpe}
+                      </span>
                     </div>
                     <small>
                       {wk.week === 12
@@ -799,7 +802,11 @@ export default function App() {
                           · série {set.index + 1}
                         </strong>
                         <span>
-                          {set.load} kg · {set.amount}{" "}
+                          {set.load} kg
+                          {(set.assistance ?? 0) > 0
+                            ? ` · assistência ${set.assistance} kg`
+                            : ""}{" "}
+                          · {set.amount}{" "}
                           {s.plan.exercises.find((e) => e.id === set.exerciseId)
                             ?.unit === "seconds"
                             ? "s"
@@ -949,6 +956,23 @@ function PlanSelect({
   );
 }
 
+function LoadBasis({ exercise: e }: { exercise: Exercise }) {
+  return (
+    <small className="subtle">
+      {e.percent !== undefined
+        ? `${e.percent}% do RM${e.weighted ? " total (PC + lastro)" : ""}`
+        : "Carga por RPE"}
+      {e.rm !== undefined
+        ? ` · RM ${e.rm} kg${e.weighted ? " de lastro" : ""} · ${e.rmSource === "historical" ? "histórico provisório" : "atual"}`
+        : " · RM não informado"}
+      {e.weighted && e.referenceBodyweight !== undefined
+        ? ` · PC de referência ${e.referenceBodyweight} kg`
+        : ""}{" "}
+      · RPE ≤ {e.rpe}
+    </small>
+  );
+}
+
 function PlanPreview({
   plan,
   onBegin,
@@ -1023,9 +1047,8 @@ function PlanPreview({
               </small>
             </strong>
             <strong>
-              {e.load === null
-                ? "A definir"
-                : `${e.weighted ? "+" : ""}${e.load} kg`}
+              {loadDescription(e)}
+              <LoadBasis exercise={e} />
               <small>Descanso sugerido: {time(e.rest)}</small>
             </strong>
           </article>
@@ -1086,6 +1109,44 @@ function Workout({
           Todos os exercícios estão abaixo. Você pode alternar para outro
           treino; seus registros ficam preservados.
         </p>
+        <button
+          className="button secondary"
+          onClick={() =>
+            void run(
+              () =>
+                update((s) => {
+                  const updated = planLoads(s.plan, {
+                    ...state.profile,
+                    bodyweight: s.bodyweight,
+                  });
+                  return {
+                    ...s,
+                    plan: {
+                      ...updated,
+                      exercises: updated.exercises.map((e) =>
+                        s.sets.some((log) => log.exerciseId === e.id)
+                          ? s.plan.exercises.find((old) => old.id === e.id)!
+                          : e,
+                      ),
+                    },
+                    decisions: [
+                      ...s.decisions,
+                      {
+                        at: Date.now(),
+                        reason:
+                          "RM/% atualizados apenas nos exercícios sem séries registradas.",
+                        decision:
+                          "Prescrições recalculadas; histórico executado preservado.",
+                      },
+                    ],
+                  };
+                }),
+              "Cargas recalculadas nos exercícios ainda não registrados.",
+            )
+          }
+        >
+          Atualizar cargas e % pelos meus RMs
+        </button>
       </section>
       {session.plan.pull && (
         <details className="card optional-oapu" open>
@@ -1098,7 +1159,7 @@ function Workout({
       <div className="complete-workout">
         {session.plan.exercises.map((e) => (
           <ExerciseCard
-            key={e.id}
+            key={`${e.id}:${e.rm}:${e.percent}:${e.load}:${e.assistance}`}
             exercise={e}
             session={session}
             state={state}
@@ -1250,8 +1311,16 @@ function ExerciseCard({
   run: Run;
 }) {
   const done = session.sets.filter((s) => s.exerciseId === e.id);
+  const planned = (i: number) =>
+    e.attempts?.[i] ?? { load: e.load, assistance: e.assistance ?? 0 };
   const [index, setIndex] = useState(() => Math.min(done.length, e.sets - 1));
-  const [load, setLoad] = useState(e.load === null ? "" : String(e.load));
+  const [load, setLoad] = useState(() => {
+    const value = planned(Math.min(done.length, e.sets - 1)).load;
+    return value === null ? "" : String(value);
+  });
+  const [assistance, setAssistance] = useState(
+    String(planned(Math.min(done.length, e.sets - 1)).assistance),
+  );
   const [amount, setAmount] = useState("");
   const [rpe, setRpe] = useState("");
   const [ready, setReady] = useState(false);
@@ -1270,7 +1339,10 @@ function ExerciseCard({
   const variants = alternatives(e);
   const last = done.at(-1);
   const advice =
-    last && !variants.length && !e.progressive && !session.plan.pr
+    last &&
+    !session.plan.pr &&
+    last.rpe >= e.rpe + 1 &&
+    (last.assistance ?? 0) === 0
       ? suggestion(
           last.load,
           last.rpe,
@@ -1282,7 +1354,14 @@ function ExerciseCard({
   function selectSeries(i: number) {
     setIndex(i);
     const old = done.find((s) => s.index === i);
-    setLoad(old ? String(old.load) : e.load === null ? "" : String(e.load));
+    setLoad(
+      old
+        ? String(old.load)
+        : planned(i).load === null
+          ? ""
+          : String(planned(i).load),
+    );
+    setAssistance(String(old?.assistance ?? planned(i).assistance));
     setAmount(old ? String(old.amount) : "");
     setRpe(old ? String(old.rpe) : "");
     setSuccessful(old?.successful ?? true);
@@ -1292,13 +1371,20 @@ function ExerciseCard({
     event.preventDefault();
     await run(
       async () => {
-        if (load === "" || amount === "" || rpe === "")
+        if (
+          load === "" ||
+          amount === "" ||
+          rpe === "" ||
+          (e.weighted && assistance === "")
+        )
           throw new Error("Preencha carga, quantidade e RPE real.");
         const baseline = last?.load ?? e.load;
         if (
           (recovery?.pain ?? 0) > 3 &&
           baseline !== null &&
-          Number(load) > baseline
+          Number(load) - (e.weighted ? Number(assistance) : 0) >
+            baseline -
+              (e.weighted ? (last?.assistance ?? e.assistance ?? 0) : 0)
         )
           throw new Error("Progressão bloqueada por dor acima de 3/10.");
         await update((s) => {
@@ -1318,6 +1404,7 @@ function ExerciseCard({
               rpe: Number(rpe),
               ready,
               successful,
+              assistance: e.weighted ? Number(assistance) : 0,
             },
             Date.now(),
           );
@@ -1335,6 +1422,11 @@ function ExerciseCard({
         });
         if (!existing) {
           setIndex(Math.min(index + 1, e.sets - 1));
+          if (e.attempts) {
+            const next = planned(Math.min(index + 1, e.sets - 1));
+            setLoad(String(next.load));
+            setAssistance(String(next.assistance));
+          }
           setAmount("");
           setRpe("");
         }
@@ -1368,11 +1460,7 @@ function ExerciseCard({
         </div>
         <div>
           <span>{e.weighted ? "Lastro prescrito" : "Carga prescrita"}</span>
-          <strong>
-            {e.load === null
-              ? "A definir"
-              : `${e.weighted ? "+" : ""}${e.load} kg`}
-          </strong>
+          <strong>{loadDescription(e)}</strong>
         </div>
         <div>
           <span>RPE máximo</span>
@@ -1383,6 +1471,19 @@ function ExerciseCard({
           <strong>{time(e.rest)}</strong>
         </div>
       </div>
+      <LoadBasis exercise={e} />
+      {e.attempts && (
+        <p className="subtle">
+          Referências:{" "}
+          {e.attempts
+            .map(
+              (a, i) =>
+                `tentativa ${i + 1}: ${a.percent}% → ${e.weighted ? "+" : ""}${a.load} kg`,
+            )
+            .join(" · ")}
+          . Avance somente com prontidão e dentro do RPE.
+        </p>
+      )}
       {e.note && <p className="subtle">{e.note}</p>}
       {variants.length > 1 && (
         <Field label="Substituição equivalente">
@@ -1514,12 +1615,35 @@ function ExerciseCard({
           />
         </div>
         {e.weighted && (
+          <Stepper
+            label="Assistência kg (0 = sem assistência)"
+            value={assistance}
+            setValue={setAssistance}
+            step={state.profile.increment}
+            max={session.bodyweight}
+          />
+        )}
+        {e.weighted && (
           <p className="subtle">
             Peso corporal na sessão: {session.bodyweight} kg · total{" "}
             {load === ""
               ? "—"
-              : totalLoad(Number(load), session.bodyweight, true)}{" "}
+              : totalLoad(Number(load), session.bodyweight, true) -
+                Number(assistance)}{" "}
             kg.
+          </p>
+        )}
+        {e.rm !== undefined && load !== "" && Number.isFinite(Number(load)) && (
+          <p className="subtle">
+            Carga digitada:{" "}
+            {(
+              ((Number(load) +
+                (e.weighted ? session.bodyweight : 0) -
+                (e.weighted ? Number(assistance) : 0)) /
+                (e.rm + (e.weighted ? session.bodyweight : 0))) *
+              100
+            ).toFixed(1)}
+            % do RM de referência. O RPE real deve ser registrado após executar.
           </p>
         )}
         {!session.plan.pr && (
@@ -2049,7 +2173,7 @@ function Profile({
           </Field>
         </div>
         <p className="subtle">
-          Sem horários ou duração obrigatória. Treinos A–E disponíveis
+          Sem horários ou duração obrigatória. Treinos A–F disponíveis
           livremente. OAPU assistido. Sono e estresse são registrados no
           check-in, não presumidos diariamente.
         </p>
@@ -2078,7 +2202,7 @@ function Profile({
                   }
                 />
               </Field>
-              <Field label="Training max validado (opcional)">
+              <Field label="Training max legado (não usado nos % de RM)">
                 <input
                   type="number"
                   min="0.1"
@@ -2119,10 +2243,87 @@ function Profile({
           />
         </Field>
         <p className="subtle">
-          Training max não preenchido permanece ausente. As cargas prescritas
-          são referências do programa; não aplicamos percentuais automaticamente
-          aos máximos antigos ou ao lastro.
+          Training max não preenchido permanece ausente. As cargas agora usam os
+          RMs de planejamento abaixo. Sem RM atual, os principais usam o
+          histórico como base provisória identificada; acessórios sem RM
+          continuam por RPE.
         </p>
+        <h3>RMs atuais para calcular as cargas</h3>
+        <p className="subtle">
+          Informe o RM de cada movimento. Barra fixa e dip: informe somente o
+          lastro máximo adicional; o cálculo soma seu peso corporal. Em branco,
+          os cinco principais usam o histórico provisório, identificado no
+          treino. O percentual é a referência e o RPE limita o esforço; reduza a
+          carga se necessário.
+        </p>
+        <div className="form-grid">
+          {[
+            ...LIFTS,
+            { id: "bench", name: "Supino reto", weighted: false },
+          ].map((lift) => (
+            <Field
+              key={lift.id}
+              label={`${lift.name} · RM atual ${lift.weighted ? "de lastro " : ""}(kg)`}
+            >
+              <input
+                type="number"
+                min="0.1"
+                max="1000"
+                step="0.1"
+                value={profile.referenceRm?.[lift.id] ?? ""}
+                placeholder={`Histórico provisório: ${profile.historical[lift.id as keyof typeof profile.historical]} kg`}
+                onChange={(event) => {
+                  const refs = { ...profile.referenceRm };
+                  if (event.target.value === "") delete refs[lift.id];
+                  else refs[lift.id] = Number(event.target.value);
+                  setProfile({ ...profile, referenceRm: refs });
+                }}
+              />
+            </Field>
+          ))}
+        </div>
+        <details>
+          <summary>RMs de acessórios e variações — opcional</summary>
+          <p className="subtle">
+            Não é necessário testar máximas de acessórios. Use uma estimativa
+            conhecida ou mantenha esses exercícios por RPE. Variações e máquinas
+            diferentes têm RMs separados. Sem valor, back squat pausado e
+            treinos de volume usam o RM do movimento principal.
+          </p>
+          <div className="form-grid">
+            {[
+              ...new Map(
+                [1, 5]
+                  .flatMap((w) =>
+                    TRAINING_DAYS.flatMap((d) => makePlan(w, d).exercises),
+                  )
+                  .filter(
+                    (e) =>
+                      !["squat", "deadlift", "dip", "pullup", "bench"].includes(
+                        e.id,
+                      ),
+                  )
+                  .map((e) => [e.id, e]),
+              ).values(),
+            ].map((e) => (
+              <Field key={e.id} label={`${e.name} · RM (kg)`}>
+                <input
+                  type="number"
+                  min="0.1"
+                  max="1000"
+                  step="0.1"
+                  value={profile.referenceRm?.[e.id] ?? ""}
+                  onChange={(event) => {
+                    const refs = { ...profile.referenceRm };
+                    if (event.target.value === "") delete refs[e.id];
+                    else refs[e.id] = Number(event.target.value);
+                    setProfile({ ...profile, referenceRm: refs });
+                  }}
+                />
+              </Field>
+            ))}
+          </div>
+        </details>
         <button className="button primary" type="submit">
           Salvar perfil <Check size={17} />
         </button>

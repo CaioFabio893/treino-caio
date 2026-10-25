@@ -1,3 +1,5 @@
+> Atualização vigente: cargas calculadas por %RM + RPE, com RMs atuais configuráveis e histórico identificado como provisório. Leia docs/CARGAS-RM-RPE.md (ou CARGAS-RM-RPE.md nesta pasta). As frases antigas sobre cargas sempre vazias foram substituídas por este pedido. Sem navegação/E2E.
+
 # Hybrid Strength — Caio
 
 Aplicativo pessoal de força, hipertrofia e one-arm pull-up. Programação de 12 semanas, seis treinos A–F livres, progressão por execução e histórico local.
@@ -6,7 +8,7 @@ Site: https://caiofabio893.github.io/treino-caio/
 Repositório: https://github.com/CaioFabio893/treino-caio
 
 ## Como usar
-Escolha a semana de preparação e continue A–F com os descansos sugeridos, mesmo ao atravessar uma semana. Não precisa completar os seis em sete dias. Todos os exercícios e todos os planos podem ser consultados sem iniciar. Sem cronômetros. Cargas iniciais a definir; sugestões só são aplicadas após seu aceite. Consulte docs/PROGRAMA-12-SEMANAS.md para ficha e progressão completas.
+Escolha a semana de preparação e continue A–F com os descansos sugeridos, mesmo ao atravessar uma semana. Não precisa completar os seis em sete dias. Todos os exercícios e todos os planos podem ser consultados sem iniciar. Sem cronômetros. Cargas em kg e %RM calculadas a partir dos RMs do perfil, com histórico provisório identificado. O RPE orienta ajustes; sugestões de alteração só são aplicadas após seu aceite. Consulte docs/PROGRAMA-12-SEMANAS.md para ficha e progressão completas.
 
 ## Seus dados
 Dados locais por navegador e origem; exporte JSON no perfil para cópia e importe sua cópia no novo site. O GitHub Pages NÃO recebe automaticamente os registros que estavam no domínio Firebase. Não apagar armazenamento antigo. Sem sincronização automática; Firebase Auth/backup remoto opcionais não estão configurados em produção. Site estático não contém credenciais.

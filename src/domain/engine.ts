@@ -261,7 +261,13 @@ export function addSet(
     input.amount > 1000 ||
     !Number.isFinite(input.rpe) ||
     input.rpe < 1 ||
-    input.rpe > 10
+    input.rpe > 10 ||
+    (input.assistance !== undefined &&
+      (!Number.isFinite(input.assistance) ||
+        input.assistance < 0 ||
+        input.assistance > session.bodyweight ||
+        (input.assistance > 0 &&
+          (!exercise.weighted || input.load > 0 || session.plan.pr))))
   )
     throw new Error("Preencha carga, quantidade e RPE válidos.");
   if (session.plan.pr && input.index === 2 && !input.ready)
@@ -298,7 +304,12 @@ export function time(value: number) {
 export function liftMetrics(sessions: Session[], lift: Lift | "bench") {
   return sessions.flatMap((s) =>
     s.sets
-      .filter((set) => set.exerciseId === lift && set.successful)
+      .filter(
+        (set) =>
+          set.exerciseId === lift &&
+          set.successful &&
+          !(set.assistance && set.assistance > 0),
+      )
       .map((set) => ({
         date: s.date,
         load: set.load,

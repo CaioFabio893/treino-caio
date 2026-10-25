@@ -18,6 +18,19 @@ beforeEach(() => {
     },
   });
 });
+it("aceita RM/% novos e rejeita RM ou percentual corrompidos", async () => {
+  const { decode } = await import("./store");
+  const state = initialState();
+  state.profile.referenceRm = { bench: 120 };
+  state.sessions = [startSession(state, makePlan(1, 3, state.profile))];
+  expect(decode(JSON.stringify(state))).toEqual(state);
+  const bad = structuredClone(state);
+  bad.profile.referenceRm!.bench = -1;
+  expect(() => decode(JSON.stringify(bad))).toThrow();
+  const percent = structuredClone(state);
+  percent.sessions[0].plan.exercises[0].percent = 150;
+  expect(() => decode(JSON.stringify(percent))).toThrow();
+});
 it("preserva snapshots antigos e substituições novas no mesmo backup", async () => {
   const { decode } = await import("./store");
   const state = initialState();

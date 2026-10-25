@@ -1,3 +1,6 @@
+## Rodada %RM + RPE — 25/10/2026
+52 testes unitários passaram, types e lint exit 0. Sem navegação/E2E. Ver docs/CARGAS-RM-RPE.md para regras e casos; build e publicação final abaixo serão registrados em PUBLICACAO.md. Resultados anteriores são históricos.
+
 ## Publicação concluída — 25/10/2026
 
 GitHub Actions confirmou sucesso: https://github.com/CaioFabio893/treino-caio/actions/runs/40230345362 . Código publicado: commit 5762fb82067f2227eb5c9315c92d403dc561c910. URL https://caiofabio893.github.io/treino-caio/ respondeu HTTP 200; JS/CSS responderam HTTP 200 e bundle contém program=oapu-strength-12w-v2 e nova ficha. Manifest relativo, worker versionado e lista offline conferidos por HTTP, sem browser. Hash do JS local Windows difere do build Linux do Actions; conferência de versão por commit do deploy e identificador do programa, não por igualdade byte a byte.

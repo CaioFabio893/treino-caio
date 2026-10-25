@@ -1,3 +1,5 @@
+> Atualização vigente: cargas calculadas por %RM + RPE, com RMs atuais configuráveis e histórico identificado como provisório. Leia docs/CARGAS-RM-RPE.md (ou CARGAS-RM-RPE.md nesta pasta). As frases antigas sobre cargas sempre vazias foram substituídas por este pedido. Sem navegação/E2E.
+
 # Continuação — Hybrid Strength — 25/10/2026
 
 ## Destino e restrições
