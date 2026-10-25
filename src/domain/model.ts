@@ -32,8 +32,11 @@ export interface Exercise {
   unit: "reps" | "seconds" | "meters";
   perSide?: boolean;
   note?: string;
+  progressive?: boolean;
 }
 export interface Plan {
+  program?: string;
+  /** Índice estável de A=1 a E=5; nome legado mantido para ler backups antigos. Não é dia da semana. */
   day: number;
   week: number;
   name: string;

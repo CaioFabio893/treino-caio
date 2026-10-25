@@ -6,9 +6,9 @@ import type {
   Profile,
   Session,
   SetLog,
-  Week,
 } from "./model";
 import { MODEL_VERSION } from "./model";
+import { makeProgramPlan, PROGRAM_WEEKS } from "./program";
 
 export const LIFTS: { id: Lift; name: string; weighted: boolean }[] = [
   { id: "squat", name: "Back Squat", weighted: false },
@@ -60,35 +60,7 @@ export function initialState(): AppState {
     readiness: [],
   };
 }
-export const WEEKS: Week[] = [
-  [4, 6, 7, "Base técnica"],
-  [4, 5, 7.5, "Construir consistência"],
-  [4, 4, 8, "Consolidar carga"],
-  [3, 5, 6, "Deload"],
-  [4, 4, 8, "Intensificar"],
-  [4, 3, 8.5, "Força específica"],
-  [5, 2, 9, "Duplas de qualidade"],
-  [3, 3, 6, "Deload"],
-  [3, 2, 9, "Preparar máximos"],
-  [2, 1, 9, "Singles técnicos"],
-  [2, 2, 7, "Taper"],
-  [3, 1, 9, "PR Test"],
-].map((row, i) => ({
-  week: i + 1,
-  phase:
-    i < 4
-      ? "Acumulação"
-      : i < 8
-        ? "Intensificação"
-        : i === 11
-          ? "PR Test"
-          : "Peaking",
-  sets: Number(row[0]),
-  reps: Number(row[1]),
-  rpe: Number(row[2]),
-  label: String(row[3]),
-}));
-
+export const WEEKS = PROGRAM_WEEKS;
 export function roundLoad(value: number, increment: number) {
   if (
     !Number.isFinite(value) ||
@@ -156,31 +128,6 @@ export function suggestion(
     };
   return { load, reason: "Manter a carga e observar técnica e recuperação." };
 }
-function ex(
-  id: string,
-  name: string,
-  sets: number,
-  reps: number,
-  load: number | null,
-  rpe: number,
-  rest = 90,
-  priority = 2,
-  extra: Partial<Exercise> = {},
-): Exercise {
-  return {
-    id,
-    name,
-    sets,
-    reps,
-    load,
-    rpe,
-    rest,
-    priority,
-    ramp: 0,
-    unit: "reps",
-    ...extra,
-  };
-}
 export function estimate(exercises: Exercise[], pull: boolean) {
   return (
     (pull ? 1800 : 480) +
@@ -219,132 +166,10 @@ export function budget(exercises: Exercise[], pull: boolean, limit = 4800) {
     valid: estimate(kept, pull) <= limit,
   };
 }
-export function makePlan(week: number, day: number): Plan {
-  if (
-    !Number.isInteger(week) ||
-    week < 1 ||
-    week > 12 ||
-    day < 1 ||
-    day > 5 ||
-    !Number.isInteger(day)
-  )
-    throw new Error("Semana/dia inválido ou descanso");
-  const w = WEEKS[week - 1];
-  const pull = [1, 3, 5].includes(day);
-  const main = (id: Lift, load: number) =>
-    ex(
-      id,
-      LIFTS.find((l) => l.id === id)!.name,
-      w.sets,
-      w.reps,
-      load,
-      w.rpe,
-      180,
-      0,
-      {
-        lift: id,
-        weighted: id === "dip" || id === "pullup",
-        ramp: 300,
-        note:
-          week === 1
-            ? "Carga inicial de referência. Confirme pelo RPE."
-            : "Referência inicial, não progressão automática. Ajuste usando execução, RPE e recuperação.",
-      },
-    );
-  let exercises: Exercise[] = [];
-  if (day === 1)
-    exercises = [
-      main("pullup", 10),
-      ex("row", "Remada apoiada", 3, 8, null, 8),
-      ex("curl", "Rosca bíceps", 2, 10, null, 8, 60, 3, { repsMax: 12 }),
-      ex("facepull", "Facepull", 2, 12, null, 8, 60, 4, { repsMax: 15 }),
-    ];
-  if (day === 2)
-    exercises = [
-      main("squat", 130),
-      main("dip", 50),
-      ex("extension", "Cadeira extensora", 2, 12, null, 8, 60, 3, {
-        repsMax: 15,
-      }),
-      ex("lateral", "Elevação lateral", 2, 12, null, 8, 60, 4, { repsMax: 15 }),
-      ex("farmer", "Farmer’s Walk", 3, 30, null, 7, 90, 2, { unit: "meters" }),
-    ];
-  if (day === 3)
-    exercises = [
-      ex("pullup-volume", "Pull-up técnico", 3, 6, 0, 7, 120, 0, {
-        repsMax: 8,
-        weighted: true,
-        ramp: 240,
-        note: "Peso corporal ou assistência. Registre a assistência nas observações da sessão; não como lastro negativo.",
-      }),
-      ex("row-single", "Remada serrote", 3, 10, null, 8, 90, 2, {
-        perSide: true,
-      }),
-      ex("reverse", "Crucifixo invertido", 2, 12, null, 8, 60, 3, {
-        repsMax: 15,
-      }),
-    ];
-  if (day === 4)
-    exercises = [
-      ex("paused-squat", "Back Squat pausado", 3, 8, 110, 7, 150, 0, {
-        ramp: 240,
-      }),
-      ex("bench", "Supino reto", 3, 6, 105, 7, 150, 0, { ramp: 180 }),
-      ex("dip-volume", "Weighted Dip volume", 3, 8, 30, 7, 120, 0, {
-        weighted: true,
-      }),
-      ex("lunge", "Passadas com halteres", 2, 10, null, 7, 90, 2, {
-        perSide: true,
-      }),
-    ];
-  if (day === 5)
-    exercises = [
-      main("deadlift", 145),
-      ex("hamstring", "Mesa flexora", 3, 12, null, 8),
-      ex("plank", "Prancha com carga", 3, 30, null, 7, 60, 3, {
-        unit: "seconds",
-        repsMax: 45,
-      }),
-    ];
-  if ([4, 8, 11].includes(week))
-    exercises = exercises.map((e) =>
-      e.lift
-        ? e
-        : { ...e, sets: Math.min(e.sets, 2), rpe: Math.min(e.rpe, w.rpe) },
-    );
-  if (week === 12)
-    exercises =
-      day === 3
-        ? []
-        : [
-            main(
-              (
-                { 1: "pullup", 2: "squat", 4: "dip", 5: "deadlift" } as Record<
-                  number,
-                  Lift
-                >
-              )[day],
-              ({ 1: 10, 2: 130, 4: 50, 5: 145 } as Record<number, number>)[day],
-            ),
-          ];
-  return {
-    week,
-    day,
-    pull,
-    pr: week === 12,
-    name: pull
-      ? `Pull ${day === 1 ? "01" : day === 3 ? "02" : "03"}`
-      : `Push & Legs ${day === 2 ? "01" : "02"}`,
-    focus: [
-      "Força técnica",
-      "Squat + Dip",
-      "Volume técnico",
-      "Volume + controle",
-      "Hinge + baixa fadiga",
-    ][day - 1],
-    ...budget(exercises, pull),
-  };
+export function workoutName(index: number) {
+  return `Treino ${"ABCDEF"[index - 1] ?? "?"}`;
 }
+export const makePlan = makeProgramPlan;
 export const OAPU = {
   1: {
     title: "Força técnica",
@@ -383,19 +208,20 @@ export function startSession(
   // Retoma a sessão ativa deste mesmo treino (idempotente, sem duplicar).
   const active = state.sessions.find(
     (s) =>
+      s.id.startsWith(`${state.profile.cycleStart}:`) &&
       s.finishedAt === null &&
       s.plan.week === plan.week &&
-      s.plan.day === plan.day,
+      s.plan.day === plan.day &&
+      s.plan.program === plan.program,
   );
   if (active) return active;
-  if (!plan.valid)
-    throw new Error("Plano excede 80 minutos e precisa de correção.");
+
   // Treinos podem ser refeitos: cada início cria uma execução única do mesmo dia.
   const run =
     state.sessions.filter(
       (s) => s.plan.week === plan.week && s.plan.day === plan.day,
     ).length + 1;
-  const key = `${sessionKey(state.profile, plan.week, plan.day)}:r${run}`;
+  const key = `${sessionKey(state.profile, plan.week, plan.day)}${plan.program ? `:${plan.program}` : ""}:r${run}`;
   return {
     id: key,
     date: dateKey(date),
@@ -417,8 +243,7 @@ export function addSet(
   now = Date.now(),
 ): Session {
   if (session.finishedAt) throw new Error("Sessão já finalizada.");
-  if (session.plan.pull && now - session.startedAt < 1800000)
-    throw new Error("Os primeiros 30 minutos são exclusivos de OAPU.");
+
   if (!session.plan.exercises.some((e) => e.id === exercise.id))
     throw new Error("Exercício fora da sessão.");
   if (
@@ -457,7 +282,7 @@ export function addSet(
         completedAt: now,
       },
     ],
-    restUntil: now + exercise.rest * 1000,
+    restUntil: null,
   };
 }
 export function elapsed(session: Session, now = Date.now()) {
@@ -470,7 +295,7 @@ export function time(value: number) {
   const s = Math.max(0, Math.floor(value));
   return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
-export function liftMetrics(sessions: Session[], lift: Lift) {
+export function liftMetrics(sessions: Session[], lift: Lift | "bench") {
   return sessions.flatMap((s) =>
     s.sets
       .filter((set) => set.exerciseId === lift && set.successful)

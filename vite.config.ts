@@ -5,13 +5,14 @@ import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 
 export default defineConfig({
+  base: "/treino-caio/",
   plugins: [
     react(),
     {
       name: "offline-assets",
       closeBundle() {
         const assets = readdirSync("dist/assets").map(
-          (file) => `/assets/${file}`,
+          (file) => `assets/${file}`,
         );
         writeFileSync("dist/offline-assets.json", JSON.stringify(assets));
         const version = createHash("sha256")

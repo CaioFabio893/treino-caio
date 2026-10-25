@@ -49,59 +49,64 @@ test("telas reais, perfil e ausência de dados fictícios", async ({ page }) => 
     page.getByText("Sua história começa no primeiro treino"),
   ).toBeVisible();
 });
-test("OAPU primeiro, série editável, descanso e retomada sem duplicação", async ({
+test("treino inteiro disponível imediatamente e séries persistem", async ({
   page,
 }) => {
   await page
     .getByRole("button", { name: "Iniciar treino", exact: true })
     .click();
-  await expect(
-    page.getByRole("heading", { name: "One Arm Pull-up" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Concluir série 1", exact: true }),
-  ).toHaveCount(0);
-  await page
-    .getByRole("textbox", { name: "Tipo de assistência" })
-    .fill("Elástico leve");
-  await page
-    .getByRole("spinbutton", { name: "Repetições", exact: true })
-    .fill("2");
-  await page
-    .getByRole("spinbutton", { name: "Isometria (segundos)" })
-    .fill("0");
-  await page.getByRole("spinbutton", { name: "RPE do registro" }).fill("6");
-  await page
-    .getByRole("button", { name: "Registrar lado D", exact: true })
-    .click();
-  await page.clock.fastForward(30 * 60 * 1000);
-  await expect(
-    page.getByRole("heading", { name: "Weighted Pull-up", exact: true }),
-  ).toBeVisible();
-  await page
+  for (const name of [
+    "Weighted Pull-up",
+    "Remada apoiada",
+    "Rosca bíceps",
+    "Facepull",
+  ])
+    await expect(
+      page.getByRole("heading", { name, exact: true }),
+    ).toBeVisible();
+  await expect(page.locator(".clocks,.rest-panel,.oapu-clock")).toHaveCount(0);
+  const first = page.getByRole("region", {
+    name: "Exercício: Weighted Pull-up",
+    exact: true,
+  });
+  await first
     .getByRole("spinbutton", { name: "Lastro kg", exact: true })
     .fill("10");
-  await page
+  await first
     .getByRole("spinbutton", { name: "Repetições", exact: true })
     .fill("6");
-  await page
+  await first
     .getByRole("spinbutton", { name: "RPE real", exact: true })
     .fill("7");
-  await page
+  await first
     .getByRole("button", { name: "Concluir série 1", exact: true })
     .click();
   await expect(
-    page.getByRole("heading", { name: "Série 2", exact: true }),
+    first.getByRole("heading", { name: "Série 2", exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("region", { name: "Descanso" })).toBeVisible();
-  await page
+  await first
     .getByRole("button", { name: "Selecionar série 1", exact: true })
     .click();
-  await page
+  await first
     .getByRole("spinbutton", { name: "Lastro kg", exact: true })
     .fill("12.5");
-  await page
+  await first
     .getByRole("button", { name: "Salvar correção", exact: true })
+    .click();
+  await page.locator(".optional-oapu>summary").click();
+  await page
+    .getByRole("textbox", { name: "Tipo de assistência" })
+    .fill("Elástico leve");
+  const oapu = page.locator(".oapu-card");
+  await oapu
+    .getByRole("spinbutton", { name: "Repetições", exact: true })
+    .fill("2");
+  await oapu
+    .getByRole("spinbutton", { name: "Isometria (segundos)" })
+    .fill("0");
+  await oapu.getByRole("spinbutton", { name: "RPE do registro" }).fill("6");
+  await page
+    .getByRole("button", { name: "Registrar lado D", exact: true })
     .click();
   await page.reload();
   await page
@@ -156,24 +161,49 @@ test("check-in e backup exportável preservam observações", async ({ page }) =
     page.getByRole("cell", { name: "Cotovelo", exact: true }),
   ).toBeVisible();
 });
-test("limites temporais não finalizam automaticamente e relógio retoma", async ({
+test("ABCDE livres, semana inteira e troca sem perder sessão", async ({
   page,
 }) => {
+  await page.clock.setFixedTime(new Date("2026-10-18T14:00:00-03:00"));
+  await page.reload();
+  await go(page, "Treino");
+  await page
+    .getByRole("button", { name: "Semana completa", exact: true })
+    .click();
+  for (const letter of "ABCDE")
+    await expect(
+      page.getByRole("heading", { name: "Treino " + letter, exact: true }),
+    ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Deadlift", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Abrir Treino E", exact: true })
+    .click();
   await page
     .getByRole("button", { name: "Iniciar treino", exact: true })
     .click();
-  await page.clock.fastForward(80 * 60 * 1000);
-  await expect(page.getByText(/80 minutos atingidos/)).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Deadlift", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("combobox", { name: "Treino", exact: true })
+    .selectOption("2");
+  await expect(
+    page.getByRole("heading", { name: "Back Squat", exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "Iniciar treino", exact: true })
+    .click();
+  await page
+    .getByRole("combobox", { name: "Treino", exact: true })
+    .selectOption("5");
   await expect(
     page.getByRole("button", { name: "Finalizar sessão", exact: true }),
   ).toBeVisible();
-  await go(page, "Início");
-  await page
-    .getByRole("button", { name: "Retomar treino", exact: true })
-    .click();
-  await expect(
-    page.locator(".clocks > div").first().locator("strong"),
-  ).toHaveText(/^8\d:\d{2}$/);
+  await expect(page.locator(".clocks,.rest-panel,.oapu-clock")).toHaveCount(0);
+  await page.clock.fastForward(90 * 60 * 1000);
+  await expect(page.getByText(/80 minutos atingidos/)).toHaveCount(0);
 });
 test("sem overflow a 320 px e offline restaura a interface com os dados", async ({
   page,

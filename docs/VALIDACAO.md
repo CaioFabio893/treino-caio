@@ -1,4 +1,40 @@
-# Validação local — 17/10/2026
+## Rodada 25/10/2026 — programação de 12 semanas e GitHub Pages
+
+40 testes unitários passaram; typecheck e lint passaram, build e check estático de base/manifest/precache passaram. Sem navegação, E2E, screenshots ou teste visual por pedido do usuário. Nenhum teste de Firestore nesta rodada (regras inalteradas). Resultados anteriores abaixo são históricos. Conferência final após os últimos ajustes será registrada na publicação.
+
+## Rodada de acessórios — 18/10/2026
+
+- npm test: 36 testes passaram (20 engine, 10 acessórios, 6 persistência).
+- npm run typecheck, npm run lint e npm run build: exit 0.
+- Testes novos cobrem blocos/deload/taper/PR, histórico por variação, progressão no topo, evolução de quantidade, falha/parcial/RPE alto, recuperação, substituição sem transferir carga, farmer, redução opcional do dip e backup misto antigo/novo.
+- NÃO executados testes de navegação, E2E ou inspeção visual, conforme pedido do usuário. Evidências de navegador e 10 E2E abaixo pertencem à rodada anterior. Não afirmar que foram repetidos.
+- Regras Firestore não alteradas nem reexecutadas. Nenhuma alteração em faturamento/Auth/backup remoto.
+- Decisões e limites: ACESSORIOS.md.
+
+# Validação atual — 18/10/2026
+
+Mudança autorizada: treinos livres A–E, vistas completas de treino e semana, sem relógios/travas. Detalhes em ALTERACAO-TREINOS-LIVRES.md.
+
+| Comando desta rodada | Resultado |
+|---|---|
+| npm run typecheck | Passou, exit 0 |
+| npm run lint | Passou, exit 0 |
+| npm test | 25 aprovados (20 engine + 5 store), exit 0 |
+| npm run build | Passou, Vite 8.3.4, exit 0 |
+| npm run test:e2e -- --workers=2 | 10 aprovados, desktop/mobile, 18,7 s, exit 0 |
+| node scripts/capture.mjs | Passou; screenshots atuais inspecionados |
+
+**35 testes executados e aprovados nesta alteração.** Regras Firestore não mudaram; não repetido o emulador nesta rodada de UI/domínio. Os 5 testes de regras da base anterior continuam como evidência histórica, não nova execução de hoje pelo Codex.
+
+Cobertura nova: plano A–E sem alteração dos exercícios; início no domingo e em qualquer semana; força imediatamente disponível sem aguardar OAPU; ausência de countdown; todos os exercícios juntos; cinco planos completos na visão semanal; alternância e retomada de registros de treinos diferentes; correção de série, reload, histórico e OAPU opcional; leitura sem alterações de snapshot legado com mais de um treino aberto; modo offline e perfil preservado. Continua sendo Chromium desktop/mobile emulado, não aparelho físico/Safari.
+
+Revisão independente informada pelo usuário em 18/10 reproduziu os 38 testes da base anterior (23 + 10 + 5), tipos/lint/build e audit sem vulnerabilidades, sem bug funcional encontrado. Esse resultado foi informado pelo revisor, não reexecutado pelo Codex na atualização documental. Ele relatou EPERM em npm ci com preview Vite segurando rolldown; após encerrar o preview deste projeto e reinstalar, os checks passaram. README e OPENCODE incluem a orientação sem encerrar processos de outros projetos.
+
+A primeira execução dos novos E2E encontrou seletor de teste que não resolvia o label implícito do select; a árvore acessível confirmava combobox Treino. Corrigido o localizador para o papel combobox e nome acessível, sem relaxar comportamento. Rodada final: dez aprovados.
+
+Hosting de produção publicado e conferido na rodada anterior (PUBLICACAO.md); Auth/backup Firestore real não configurados ou validados. Instalação física da PWA, acessibilidade manual, Safari e atualização de worker com sessão aberta seguem pendentes. A matriz TESTES.md reflete o pedido atual; restrições antigas abaixo são apenas relato histórico da base.
+
+## Registro histórico de 17/10/2026
 
 ## Resultado final desta rodada
 | Comando | Resultado real |
@@ -36,6 +72,6 @@ Total: **38 testes automatizados aprovados**. Node 24.19.0, npm 11.17.0, Java 21
 `docs/evidencias/inicio-desktop.png`, `inicio-mobile.png`, `treino-mobile.png`. Capturados em contexto de teste isolado, relógio em segunda-feira 19/10/2026 para visualizar treino permitido. Não são registros reais do usuário. O relógio do aplicativo normal usa data/hora do aparelho.
 
 ## O que ainda não foi validado
-Não foi configurado, publicado ou acessado Firebase real. Login/backup em produção, instalação manual em aparelho físico, Safari, teclado virtual real, leitor de tela, medição de contraste, zoom 200%, rotação/tablet e migração de service worker com versão anterior aberta permanecem pendentes de verificação dedicada. A matriz TESTES.md é mais ampla que a cobertura atual.
+Na validação local original, Auth/backup Firestore de produção não foram configurados ou testados. O Hosting foi publicado posteriormente conforme PUBLICACAO.md. Login/backup em produção, instalação manual em aparelho físico, Safari, teclado virtual real, leitor de tela, medição de contraste, zoom 200%, rotação/tablet e migração de service worker com versão anterior aberta permanecem pendentes de verificação dedicada. A matriz TESTES.md é mais ampla que a cobertura atual.
 
 Não há sincronização automática entre dispositivos nem isolamento de perfis locais por conta. Cloud é backup manual; local pertence ao aparelho. Ver limites e prioridades em OPENCODE.md.

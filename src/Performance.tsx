@@ -14,7 +14,7 @@ import {
 import type { AppState, Lift } from "./domain/model";
 import { LIFTS, liftMetrics, totalLoad } from "./domain/engine";
 export default function Performance({ state }: { state: AppState }) {
-  const [lift, setLift] = useState<Lift>("squat");
+  const [lift, setLift] = useState<Lift | "bench">("squat");
   const [period, setPeriod] = useState(90);
   const records = liftMetrics(state.sessions, lift);
   const cycleSessions = state.sessions.filter((s) =>
@@ -88,9 +88,12 @@ export default function Performance({ state }: { state: AppState }) {
           <span>Movimento</span>
           <select
             value={lift}
-            onChange={(e) => setLift(e.target.value as Lift)}
+            onChange={(e) => setLift(e.target.value as Lift | "bench")}
           >
-            {LIFTS.map((l) => (
+            {[
+              ...LIFTS,
+              { id: "bench", name: "Supino reto", weighted: false },
+            ].map((l) => (
               <option key={l.id} value={l.id}>
                 {l.name}
               </option>
@@ -145,7 +148,8 @@ export default function Performance({ state }: { state: AppState }) {
         <section className="card stat">
           <span className="eyebrow">TRAINING MAX VALIDADO</span>
           <h3>
-            {state.profile.trainingMax[lift] ?? "—"} <small>kg</small>
+            {lift === "bench" ? "—" : (state.profile.trainingMax[lift] ?? "—")}{" "}
+            <small>kg</small>
           </h3>
           <p>Informado no perfil · não inferido</p>
         </section>
@@ -154,7 +158,11 @@ export default function Performance({ state }: { state: AppState }) {
         <div className="section-title">
           <div>
             <span className="eyebrow">EVOLUÇÃO · E1RM</span>
-            <h3>{LIFTS.find((l) => l.id === lift)?.name}</h3>
+            <h3>
+              {lift === "bench"
+                ? "Supino reto"
+                : LIFTS.find((l) => l.id === lift)?.name}
+            </h3>
           </div>
           <ArrowUpRight size={20} className="lime" />
         </div>

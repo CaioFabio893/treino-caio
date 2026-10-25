@@ -6,7 +6,6 @@ import {
   Check,
   ChevronRight,
   CircleHelp,
-  Clock3,
   Dumbbell,
   Flame,
   Heart,
@@ -23,7 +22,19 @@ import {
   WifiOff,
   X,
 } from "lucide-react";
+import {
+  PROGRAM_ID,
+  ROTATION,
+  TRAINING_DAYS,
+  oapuProtocol,
+} from "./domain/program";
 import type { LucideIcon } from "lucide-react";
+import {
+  accessoryProgression,
+  alternatives,
+  reducePushVolume,
+  substitute,
+} from "./domain/accessories";
 import type {
   AppState,
   Exercise,
@@ -33,15 +44,12 @@ import type {
 } from "./domain/model";
 import {
   addSet,
-  currentWeek,
   dateKey,
-  DAYS,
-  elapsed,
   LIFTS,
   liftMetrics,
   localDate,
   makePlan,
-  OAPU,
+  workoutName,
   startSession,
   suggestion,
   time,
@@ -70,14 +78,6 @@ const NAV: { page: Page; title: string; icon: LucideIcon }[] = [
   { page: "historico", title: "Histórico", icon: History },
   { page: "perfil", title: "Configurações", icon: Settings2 },
 ];
-function useNow() {
-  const [now, set] = useState(Date.now);
-  useEffect(() => {
-    const id = setInterval(() => set(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-  return now;
-}
 function Tag({
   children,
   muted = false,
@@ -112,24 +112,75 @@ function Field({
 }
 export default function App() {
   const state = useStore();
-  const now = useNow();
+  const now = Date.now();
+  const [savedSelection] = useState(() => {
+    try {
+      const raw: unknown = JSON.parse(
+        localStorage.getItem(
+          `hybrid-strength:selection:${state.profile.cycleStart}`,
+        ) ?? "null",
+      );
+      if (
+        raw &&
+        typeof raw === "object" &&
+        "week" in raw &&
+        "day" in raw &&
+        typeof raw.week === "number" &&
+        Number.isInteger(raw.week) &&
+        raw.week >= 1 &&
+        raw.week <= 12 &&
+        typeof raw.day === "number" &&
+        TRAINING_DAYS.includes(raw.day)
+      )
+        return { week: raw.week, day: raw.day };
+    } catch {
+      /* Armazenamento indisponível não impede consultar a ficha. */
+    }
+    return { week: 1, day: 1 };
+  });
+  const latestOpen = state.sessions
+    .filter(
+      (s) =>
+        s.finishedAt === null &&
+        s.id.startsWith(`${state.profile.cycleStart}:`) &&
+        s.plan.program === PROGRAM_ID,
+    )
+    .at(-1);
   const [page, setPage] = useState<Page>("inicio");
-  const [week, setWeek] = useState(() => currentWeek(state.profile.cycleStart));
-  const [day, setDay] = useState(() =>
-    new Date().getDay() >= 1 && new Date().getDay() <= 5
-      ? new Date().getDay()
-      : 1,
+  const [week, setWeek] = useState(
+    latestOpen?.plan.week ?? savedSelection.week,
   );
+  const [showAll, setShowAll] = useState(false);
+  const [day, setDay] = useState(latestOpen?.plan.day ?? savedSelection.day);
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
   const [menu, setMenu] = useState(false);
   const [online, setOnline] = useState(navigator.onLine);
-  const active = state.sessions.find((s) => s.finishedAt === null);
-  const cycleSessions = state.sessions.filter((s) =>
-    s.id.startsWith(`${state.profile.cycleStart}:`),
+  const active = state.sessions.find(
+    (s) =>
+      s.finishedAt === null &&
+      s.plan.week === week &&
+      s.plan.day === day &&
+      s.id.startsWith(`${state.profile.cycleStart}:`) &&
+      s.plan.program === PROGRAM_ID,
+  );
+  const cycleSessions = state.sessions.filter(
+    (s) =>
+      s.id.startsWith(`${state.profile.cycleStart}:`) &&
+      s.plan.program === PROGRAM_ID,
   );
   const plan = makePlan(week, day);
   const w = WEEKS[week - 1];
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        `hybrid-strength:selection:${state.profile.cycleStart}`,
+        JSON.stringify({ week, day }),
+      );
+    } catch {
+      /* Os registros principais continuam com tratamento próprio de erro. */
+    }
+  }, [week, day, state.profile.cycleStart]);
   useEffect(() => {
     document.documentElement.dataset.theme = state.theme;
   }, [state.theme]);
@@ -163,19 +214,18 @@ export default function App() {
   }
   async function begin() {
     await run(async () => {
-       await commit((s) => {
-         const created = startSession(s, plan);
-         return s.sessions.some((x) => x.id === created.id)
-           ? s
-           : { ...s, sessions: [...s.sessions, created] };
+      await commit((s) => {
+        const created = startSession(s, plan);
+        return s.sessions.some((x) => x.id === created.id)
+          ? s
+          : { ...s, sessions: [...s.sessions, created] };
       });
+      setShowAll(false);
       go("treino");
     });
   }
   return (
-    <div
-      className={`app-shell ${page === "treino" && active ? "training-mode" : ""}`}
-    >
+    <div className="app-shell">
       <a className="skip" href="#main">
         Pular para conteúdo
       </a>
@@ -211,11 +261,11 @@ export default function App() {
           <div className="mini-progress">
             <i
               style={{
-                width: `${(currentWeek(state.profile.cycleStart) / 12) * 100}%`,
+                width: `${(week / 12) * 100}%`,
               }}
             />
           </div>
-          <small>Semana {currentWeek(state.profile.cycleStart)} de 12</small>
+          <small>Semana {week} de 12</small>
         </div>
         <span className="nav-label">WORKSPACE</span>
         <nav>
@@ -320,22 +370,21 @@ export default function App() {
                   className="button secondary"
                   onClick={() => go("ciclo")}
                 >
-                  Semana {currentWeek(state.profile.cycleStart)}{" "}
-                  <ChevronRight size={16} />
+                  Semana {week} <ChevronRight size={16} />
                 </button>
               </div>
               <div className="dashboard-grid">
                 <section className="hero">
                   <div className="hero-top">
                     <Tag>
-                      {active ? "SESSÃO EM ANDAMENTO" : "TREINO DE HOJE"}
+                      {active ? "REGISTRO EM ANDAMENTO" : "TREINO ESCOLHIDO"}
                     </Tag>
                     <span className="eyebrow">{w.phase.toUpperCase()}</span>
                   </div>
                   <div className="hero-content">
                     <div className="hero-copy">
                       <span className="eyebrow">
-                        {DAYS[day].toUpperCase()} · SEMANA {week}
+                        {workoutName(day).toUpperCase()} · SEMANA {week}
                       </span>
                       <h2>
                         Força com
@@ -343,19 +392,20 @@ export default function App() {
                         <span className="outline-text">intenção.</span>
                       </h2>
                       <p>
-                        {plan.name} · {plan.focus}. Execute com controle e respeite
-                        o seu RPE.
+                        {plan.name} · {plan.focus}. Execute com controle e
+                        respeite o seu RPE.
                       </p>
                       <div className="hero-facts">
                         <span>
-                          <Clock3 size={16} /> Até 80 min
+                          <Check size={16} /> No seu ritmo
                         </span>
                         <span>
-                          <Dumbbell size={16} /> {plan.exercises.length} exercícios
+                          <Dumbbell size={16} /> {plan.exercises.length}{" "}
+                          exercícios
                         </span>
                         {plan.pull && (
                           <span>
-                            <Target size={16} /> OAPU · 30 min
+                            <Target size={16} /> OAPU · protocolo disponível
                           </span>
                         )}
                       </div>
@@ -451,26 +501,26 @@ export default function App() {
                   icon={Check}
                 />
                 <Stat
-                  label="ADERÊNCIA SEMANAL"
+                  label="PROGRESSO DOS TREINOS"
                   value={String(
                     Math.round(
-                      (cycleSessions.filter(
-                        (s) =>
-                          s.finishedAt &&
-                          s.plan.week === currentWeek(state.profile.cycleStart),
-                      ).length /
-                        5) *
+                      (new Set(
+                        cycleSessions
+                          .filter((s) => s.finishedAt && s.plan.week === week)
+                          .map((s) => s.plan.day),
+                      ).size /
+                        6) *
                         100,
                     ),
                   )}
                   unit="%"
-                  sub="5 sessões planejadas nesta semana"
+                  sub="Dos 6 planos da semana selecionada"
                   icon={Flame}
                 />
                 <Stat
                   label="FASE ATUAL"
-                  value={WEEKS[currentWeek(state.profile.cycleStart) - 1].phase}
-                  sub={`Semana ${currentWeek(state.profile.cycleStart)} de 12`}
+                  value={WEEKS[week - 1].phase}
+                  sub={`Semana ${week} de 12`}
                   icon={Target}
                 />
               </div>
@@ -480,24 +530,30 @@ export default function App() {
                     <span className="eyebrow">
                       O PLANO É SIMPLES. A EXECUÇÃO É SUA.
                     </span>
-                    <h3>Sua semana de treino</h3>
+                    <h3>Seus treinos A–E</h3>
                   </div>
-                  <button className="text-button" onClick={() => go("ciclo")}>
-                    Ver ciclo completo <ArrowRight size={15} />
+                  <button
+                    className="text-button"
+                    onClick={() => {
+                      setShowAll(true);
+                      go("treino");
+                    }}
+                  >
+                    Ver semana completa <ArrowRight size={15} />
                   </button>
                 </div>
                 <div className="week-strip">
-                  {[1, 2, 3, 4, 5].map((d) => (
+                  {TRAINING_DAYS.map((d) => (
                     <button
                       key={d}
-                      className={`day-card ${new Date(now).getDay() === d ? "today" : ""}`}
+                      className={`day-card ${day === d ? "today" : ""}`}
                       onClick={() => {
                         setDay(d);
-                        setWeek(currentWeek(state.profile.cycleStart));
+                        setShowAll(false);
                         go("treino");
                       }}
                     >
-                      <span>{DAYS[d]}</span>
+                      <span>{workoutName(d)}</span>
                       <div className="day-icon">
                         <Dumbbell size={20} />
                       </div>
@@ -581,100 +637,70 @@ export default function App() {
               </div>
             </>
           )}
-          {page === "treino" &&
-            (active ? (
-              <Workout
-                session={active}
-                state={state}
-                now={now}
-                run={run}
-                onExit={() => go("inicio")}
+          {page === "treino" && (
+            <>
+              <PageHeading
+                eyebrow="SEUS TREINOS, NO SEU RITMO"
+                title="Treinos A–E"
+                text="Abra qualquer treino quando quiser. Consulte o plano completo ou registre suas séries sem cronômetro e sem travas de calendário."
               />
-            ) : (
-              <>
-                <PageHeading
-                  eyebrow="EXECUÇÃO COM INTENÇÃO"
-                  title="Seu próximo treino"
-                  text="Escolha o treino e comece quando quiser. Cada sessão fica salva no histórico."
-                />
-                <PlanSelect
-                  week={week}
-                  day={day}
-                  setWeek={setWeek}
-                  setDay={setDay}
-                />
-                <section className="card plan-overview">
-                  <div>
-                    <Tag>
-                      {w.phase} · Semana {week}
-                    </Tag>
-                    <h2>{plan.name}</h2>
-                    <p>{plan.focus}</p>
-                    <div className="hero-facts">
-                      <span>
-                        <Clock3 size={16} />
-                        {Math.ceil(plan.estimatedSeconds / 60)} min estimados
-                      </span>
-                      {plan.pull && (
-                        <span>
-                          <Target size={16} />
-                          OAPU nos primeiros 30 min
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    className="button primary"
-                    onClick={() => void begin()}
-                  >
-                    Iniciar treino <ArrowRight size={17} />
-                  </button>
-                </section>
-                {plan.removed.length > 0 && (
-                  <p className="notice">
-                    Ajuste de tempo: removidos {plan.removed.join(", ")}.
-                  </p>
-                )}
-                <div className="exercise-preview">
-                  {plan.exercises.map((e, i) => (
-                    <section className="card prescription" key={e.id}>
-                      <span className="exercise-number">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <div>
-                        <h3>{e.name}</h3>
-                        <p>
-                          {e.note ||
-                            "Confirme a carga pelo esforço e pela técnica."}
-                        </p>
-                      </div>
-                      <strong>
-                        {e.sets}×{e.reps}
-                        {e.repsMax ? `–${e.repsMax}` : ""}
-                        <small>RPE ≤ {e.rpe}</small>
-                      </strong>
-                      <strong>
-                        {e.load === null
-                          ? "A definir"
-                          : `${e.weighted ? "+" : ""}${e.load} kg`}
-                        <small>{time(e.rest)} de descanso</small>
-                      </strong>
-                    </section>
+              <PlanSelect
+                week={week}
+                day={day}
+                setWeek={setWeek}
+                setDay={setDay}
+              />
+              <div
+                className="view-switch"
+                aria-label="Visualização dos treinos"
+              >
+                <button
+                  className={showAll ? "button secondary" : "button primary"}
+                  aria-pressed={!showAll}
+                  onClick={() => setShowAll(false)}
+                >
+                  Treino completo
+                </button>
+                <button
+                  className={showAll ? "button primary" : "button secondary"}
+                  aria-pressed={showAll}
+                  onClick={() => setShowAll(true)}
+                >
+                  Todos os treinos
+                </button>
+              </div>
+              {showAll ? (
+                <div className="whole-week">
+                  {TRAINING_DAYS.map((index) => (
+                    <PlanPreview
+                      key={index}
+                      plan={makePlan(week, index)}
+                      onOpen={() => {
+                        setDay(index);
+                        setShowAll(false);
+                      }}
+                    />
                   ))}
                 </div>
-                <p className="subtle">
-                  Aquecimento, rampas, descansos e transições incluídos na
-                  estimativa. Cargas iniciais são referências; não são
-                  percentuais dos máximos antigos.
-                </p>
-              </>
-            ))}
+              ) : active ? (
+                <Workout
+                  key={active.id}
+                  session={active}
+                  state={state}
+                  run={run}
+                  onExit={() => go("inicio")}
+                />
+              ) : (
+                <PlanPreview plan={plan} onBegin={() => void begin()} />
+              )}
+            </>
+          )}
           {page === "ciclo" && (
             <>
               <PageHeading
                 eyebrow="VISÃO DE LONGO PRAZO"
                 title="12 semanas. Um propósito."
-                text="Construa volume, desenvolva força, chegue pronto. Os dias de volume mantêm seus próprios limites de esforço."
+                text="Construa volume, desenvolva força, chegue pronto. Os treinos de volume mantêm seus próprios limites de esforço."
               />
               <div className="phase-legend">
                 {["Acumulação", "Intensificação", "Peaking", "PR Test"].map(
@@ -699,9 +725,7 @@ export default function App() {
                       <span className="eyebrow">
                         SEMANA {String(wk.week).padStart(2, "0")}
                       </span>
-                      {wk.week === currentWeek(state.profile.cycleStart) && (
-                        <Tag>Atual</Tag>
-                      )}
+                      {wk.week === week && <Tag>Atual</Tag>}
                     </div>
                     <h3>{wk.label}</h3>
                     <p>{wk.phase}</p>
@@ -716,7 +740,7 @@ export default function App() {
                     <small>
                       {wk.week === 12
                         ? "Testes com prontidão · sem 105% automático"
-                        : "5 dias · dois dias de recuperação"}
+                        : "6 treinos · ciclo contínuo com descansos"}
                     </small>
                     <ArrowRight size={18} />
                   </button>
@@ -758,9 +782,7 @@ export default function App() {
                       <Tag muted={!s.finishedAt}>
                         {s.finishedAt ? "Finalizada" : "Em andamento"}
                       </Tag>
-                      <span>
-                        {s.sets.length} séries · {time(elapsed(s, now))}
-                      </span>
+                      <span>{s.sets.length} séries</span>
                     </summary>
                     <p>
                       Peso corporal registrado: {s.bodyweight} kg. Modelo:{" "}
@@ -914,11 +936,11 @@ function PlanSelect({
           ))}
         </select>
       </Field>
-      <Field label="Dia de treino">
+      <Field label="Treino">
         <select value={day} onChange={(e) => setDay(Number(e.target.value))}>
-          {[1, 2, 3, 4, 5].map((d) => (
+          {TRAINING_DAYS.map((d) => (
             <option key={d} value={d}>
-              {DAYS[d]} · {makePlan(week, d).name}
+              {makePlan(week, d).name} · {makePlan(week, d).focus}
             </option>
           ))}
         </select>
@@ -927,28 +949,112 @@ function PlanSelect({
   );
 }
 
+function PlanPreview({
+  plan,
+  onBegin,
+  onOpen,
+}: {
+  plan: ReturnType<typeof makePlan>;
+  onBegin?: () => void;
+  onOpen?: () => void;
+}) {
+  return (
+    <section
+      className="card full-plan"
+      aria-label={`Plano completo: ${plan.name}`}
+    >
+      <div className="section-title">
+        <div>
+          <Tag>
+            Semana {plan.week} · {WEEKS[plan.week - 1].phase}
+          </Tag>
+          <h2>{plan.name}</h2>
+          <p>{plan.focus}</p>
+          <small>
+            Bloco {Math.ceil(plan.week / 4)} · acessórios estáveis por quatro
+            semanas, com progressão pela execução
+          </small>
+        </div>
+        {onOpen && (
+          <button className="button secondary" onClick={onOpen}>
+            Abrir {plan.name}
+            <ArrowRight size={16} />
+          </button>
+        )}
+      </div>
+      {plan.pull && (
+        <div className="protocol-preview">
+          <strong>OAPU · {oapuProtocol(plan.week, plan.day).title}</strong>
+          <p>
+            {oapuProtocol(plan.week, plan.day).skill}
+            <br />
+            {oapuProtocol(plan.week, plan.day).support}
+          </p>
+          <small>
+            RPE máximo {oapuProtocol(plan.week, plan.day).rpe}. Referência sem
+            contagem regressiva ou bloqueio dos demais exercícios.
+          </small>
+        </div>
+      )}
+      <p className="subtle">
+        {ROTATION}. Selecione a semana de preparação (1–12) em que está;
+        continue a sequência sem reiniciar em A toda segunda-feira.
+      </p>
+      <div className="exercise-preview">
+        {plan.exercises.map((e, i) => (
+          <article className="prescription" key={e.id}>
+            <span className="exercise-number">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <div>
+              <h3>{e.name}</h3>
+              <p>{e.note || "Confirme a carga pelo esforço e pela técnica."}</p>
+            </div>
+            <strong>
+              {e.sets}×{e.reps}
+              {e.repsMax ? `–${e.repsMax}` : ""}
+              <small>
+                {e.unit === "seconds"
+                  ? "segundos"
+                  : e.unit === "meters"
+                    ? "metros"
+                    : "repetições"}{" "}
+                · RPE ≤ {e.rpe}
+              </small>
+            </strong>
+            <strong>
+              {e.load === null
+                ? "A definir"
+                : `${e.weighted ? "+" : ""}${e.load} kg`}
+              <small>Descanso sugerido: {time(e.rest)}</small>
+            </strong>
+          </article>
+        ))}
+      </div>
+      {!plan.exercises.length && (
+        <p>Treino técnico de OAPU, sem testes de força.</p>
+      )}
+      {onBegin && (
+        <button className="button primary" onClick={onBegin}>
+          Iniciar treino
+          <ArrowRight size={17} />
+        </button>
+      )}
+    </section>
+  );
+}
 function Workout({
   session,
   state,
-  now,
   run,
   onExit,
 }: {
   session: Session;
   state: AppState;
-  now: number;
   run: Run;
   onExit: () => void;
 }) {
-  const [exerciseIndex, setExerciseIndex] = useState(0);
   const [finish, setFinish] = useState(false);
-  const seconds = elapsed(session, now);
-  const oapuActive = session.plan.pull && seconds < 1800;
-  const ex = session.plan.exercises[exerciseIndex];
-  const rest = Math.max(
-    0,
-    Math.ceil(((session.restUntil ?? now) - now) / 1000),
-  );
   const completed = session.sets.length;
   const total = session.plan.exercises.reduce((n, e) => n + e.sets, 0);
   async function update(change: (s: Session) => Session) {
@@ -959,7 +1065,7 @@ function Workout({
   }
   return (
     <>
-      <section className="session-header card">
+      <section className="card session-header">
         <div className="session-name">
           <button
             className="icon-button"
@@ -968,155 +1074,54 @@ function Workout({
           >
             <ArrowRight size={18} style={{ transform: "rotate(180deg)" }} />
           </button>
-          <Dumbbell size={22} />
           <div>
-            <h2>{session.plan.name}</h2>
+            <h2>{workoutName(session.plan.day)}</h2>
             <small>
               Semana {session.plan.week} · {session.plan.focus}
             </small>
           </div>
-          <Tag>{oapuActive ? "OAPU" : "FORÇA"}</Tag>
+          <Tag>No seu ritmo</Tag>
         </div>
-        <div className="clocks">
-          <div>
-            <span>Decorrido</span>
-            <strong>{time(seconds)}</strong>
-          </div>
-          <div>
-            <span>Restante até 80 min</span>
-            <strong>{time(4800 - seconds)}</strong>
-          </div>
-          <div>
-            <span>Limite previsto</span>
-            <strong>
-              {new Date(session.startedAt + 4800000).toLocaleTimeString(
-                "pt-BR",
-                { hour: "2-digit", minute: "2-digit" },
-              )}
-            </strong>
-          </div>
-        </div>
-        <div className="session-progress">
-          <i style={{ width: `${Math.min(100, (seconds / 4800) * 100)}%` }} />
-        </div>
+        <p className="subtle">
+          Todos os exercícios estão abaixo. Você pode alternar para outro
+          treino; seus registros ficam preservados.
+        </p>
       </section>
-      {seconds >= 3600 && (
-        <div className="notice" role="status">
-          {seconds >= 4800
-            ? "80 minutos atingidos. Finalize quando for seguro; a sessão continua aberta."
-            : seconds >= 4500
-              ? "75 minutos: priorize concluir com qualidade."
-              : seconds >= 4200
-                ? "70 minutos: evite iniciar acessórios de baixa prioridade."
-                : "60 minutos: confira o tempo restante."}{" "}
-          Acessórios removíveis:{" "}
-          {session.plan.exercises
-            .filter((e) => e.priority > 0)
-            .map((e) => e.name)
-            .join(", ") || "nenhum"}
-          .
-        </div>
+      {session.plan.pull && (
+        <details className="card optional-oapu" open>
+          <summary>
+            One-arm pull-up · prioridade: registrar séries por braço
+          </summary>
+          <Oapu session={session} state={state} update={update} run={run} />
+        </details>
       )}
-      {oapuActive ? (
-        <Oapu session={session} seconds={seconds} update={update} run={run} />
-      ) : (
-        <>
-          {session.plan.pull && (
-            <div className="notice">
-              <Check size={17} /> Bloco de 30 minutos encerrado. Revise seus
-              registros de OAPU no histórico.
-            </div>
-          )}
-          <div className="exercise-tabs" aria-label="Exercícios">
-            {session.plan.exercises.map((e, i) => (
-              <button
-                key={e.id}
-                onClick={() => setExerciseIndex(i)}
-                className={i === exerciseIndex ? "selected" : ""}
-              >
-                <span>{i + 1}</span>
-                {e.name}
-                <small>
-                  {session.sets.filter((s) => s.exerciseId === e.id).length}/
-                  {e.sets}
-                </small>
-              </button>
-            ))}
-          </div>
-          {ex ? (
-            <ExerciseCard
-              key={ex.id}
-              exercise={ex}
-              session={session}
-              state={state}
-              now={now}
-              update={update}
-              run={run}
-            />
-          ) : (
-            <section className="card">
-              <Empty
-                title="Sessão técnica leve"
-                text="Hoje não há teste de força. O bloco de OAPU é o foco da sessão."
-              />
-            </section>
-          )}
-          {rest > 0 && (
-            <section className="rest-panel card" aria-label="Descanso">
-              <div>
-                <span className="eyebrow">DESCANSO</span>
-                <small>Respire. Prepare a próxima série.</small>
-              </div>
-              <div className="rest-controls">
-                <button
-                  className="icon-button"
-                  aria-label="Diminuir descanso em 15 segundos"
-                  onClick={() =>
-                    void run(() =>
-                      update((s) => ({
-                        ...s,
-                        restUntil: Math.max(now, (s.restUntil ?? now) - 15000),
-                      })),
-                    )
-                  }
-                >
-                  <Minus />
-                </button>
-                <strong>{time(rest)}</strong>
-                <button
-                  className="icon-button"
-                  aria-label="Aumentar descanso em 15 segundos"
-                  onClick={() =>
-                    void run(() =>
-                      update((s) => ({
-                        ...s,
-                        restUntil: (s.restUntil ?? now) + 15000,
-                      })),
-                    )
-                  }
-                >
-                  <Plus />
-                </button>
-              </div>
-              <button
-                className="button secondary"
-                onClick={() =>
-                  void run(() => update((s) => ({ ...s, restUntil: null })))
-                }
-              >
-                Pular descanso <ChevronRight size={16} />
-              </button>
-            </section>
-          )}
-        </>
+      <div className="complete-workout">
+        {session.plan.exercises.map((e) => (
+          <ExerciseCard
+            key={e.id}
+            exercise={e}
+            session={session}
+            state={state}
+            update={update}
+            run={run}
+          />
+        ))}
+      </div>
+      {!session.plan.exercises.length && (
+        <section className="card">
+          <Empty
+            title="Treino técnico"
+            text="Consulte o protocolo de OAPU acima. Não há teste de força neste treino."
+          />
+        </section>
       )}
       <div className="session-bottom">
         <span>
-          {completed}/{total} séries de força registradas · o relógio segue em
-          tempo real
+          {completed}/{total} séries de força registradas · sem limite de tempo
         </span>
         <button className="button secondary" onClick={() => setFinish(true)}>
-          Finalizar sessão <Check size={17} />
+          Finalizar sessão
+          <Check size={17} />
         </button>
       </div>
       {finish && (
@@ -1124,7 +1129,7 @@ function Workout({
           <h2 id="finish-title">Encerrar por hoje?</h2>
           <p>
             {completed} de {total} séries registradas. Séries não executadas
-            ficam vazias. O histórico preserva os seus registros.
+            ficam vazias.
           </p>
           <div className="button-row">
             <button
@@ -1235,14 +1240,12 @@ function ExerciseCard({
   exercise: e,
   session,
   state,
-  now,
   update,
   run,
 }: {
   exercise: Exercise;
   session: Session;
   state: AppState;
-  now: number;
   update: (change: (s: Session) => Session) => Promise<void>;
   run: Run;
 }) {
@@ -1255,16 +1258,27 @@ function ExerciseCard({
   const [successful, setSuccessful] = useState(true);
   const existing = done.find((s) => s.index === index);
   const recovery = state.readiness.find((r) => r.date === dateKey());
-  const last = done.at(-1);
-  const advice = last
-    ? suggestion(
-        last.load,
-        last.rpe,
-        e.rpe,
+  const progression = session.plan.pr
+    ? null
+    : accessoryProgression(
+        e,
+        state.sessions,
+        session.id,
         state.profile.increment,
-        recovery?.pain,
-      )
-    : null;
+        recovery,
+      );
+  const variants = alternatives(e);
+  const last = done.at(-1);
+  const advice =
+    last && !variants.length && !e.progressive && !session.plan.pr
+      ? suggestion(
+          last.load,
+          last.rpe,
+          e.rpe,
+          state.profile.increment,
+          recovery?.pain,
+        )
+      : null;
   function selectSeries(i: number) {
     setIndex(i);
     const old = done.find((s) => s.index === i);
@@ -1305,7 +1319,7 @@ function ExerciseCard({
               ready,
               successful,
             },
-            now,
+            Date.now(),
           );
           return prev
             ? {
@@ -1329,7 +1343,10 @@ function ExerciseCard({
     );
   }
   return (
-    <section className="card active-exercise">
+    <section
+      className="card active-exercise"
+      aria-label={`Exercício: ${e.name}`}
+    >
       <div className="section-title">
         <h2>{e.name}</h2>
         <Tag>{e.priority === 0 ? "Principal" : "Acessório"}</Tag>
@@ -1367,6 +1384,90 @@ function ExerciseCard({
         </div>
       </div>
       {e.note && <p className="subtle">{e.note}</p>}
+      {variants.length > 1 && (
+        <Field label="Substituição equivalente">
+          <select
+            value={e.id}
+            disabled={done.length > 0}
+            onChange={(event) => {
+              const variant = event.target.value;
+              void run(
+                () => update((s) => substitute(s, e.id, variant)),
+                "Variação alterada. Defina a carga desta variação.",
+              );
+            }}
+          >
+            {variants.map(([id, name]) => (
+              <option value={id} key={id}>
+                {name}
+              </option>
+            ))}
+          </select>
+          <small>
+            {done.length
+              ? "Troca disponível na próxima sessão para preservar suas séries."
+              : "Escolha antes da primeira série. Cada variação tem seu próprio histórico."}
+          </small>
+        </Field>
+      )}
+      {e.id === "dip-volume" && e.sets > 2 && done.length === 0 && (
+        <button
+          className="button secondary"
+          onClick={() =>
+            void run(
+              () => update(reducePushVolume),
+              "Dip reduzido para 2 séries.",
+            )
+          }
+        >
+          Recuperação baixa: reduzir dip para 2 séries
+        </button>
+      )}
+      {progression && (
+        <div className="advice">
+          <div>
+            <strong>Última execução finalizada desta variação</strong>
+            <p>{progression.summary}</p>
+            <p>{progression.reason}</p>
+            {progression.load !== null && (
+              <>
+                <p>
+                  Sugestão: {progression.load} kg × {progression.amount}{" "}
+                  {e.unit === "meters"
+                    ? "m"
+                    : e.unit === "seconds"
+                      ? "s"
+                      : "reps"}
+                  . Incremento configurado: {state.profile.increment} kg.
+                </p>
+                <button
+                  className="text-button"
+                  disabled={done.length > 0}
+                  onClick={() =>
+                    void run(async () => {
+                      await update((s) => ({
+                        ...s,
+                        decisions: [
+                          ...s.decisions,
+                          {
+                            at: Date.now(),
+                            reason: `${e.name}: ${progression.reason}`,
+                            decision: `Sugestão aceita: ${progression.load} kg × ${progression.amount}.`,
+                          },
+                        ],
+                      }));
+                      setLoad(String(progression.load));
+                      setAmount(String(progression.amount));
+                    }, "Sugestão aplicada aos campos. Confirme o esforço na execução.")
+                  }
+                >
+                  Aplicar sugestão aos campos
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
       <div className="series-pills">
         {Array.from({ length: e.sets }, (_, i) => (
           <button
@@ -1420,6 +1521,16 @@ function ExerciseCard({
               : totalLoad(Number(load), session.bodyweight, true)}{" "}
             kg.
           </p>
+        )}
+        {!session.plan.pr && (
+          <label className="subtle">
+            <input
+              type="checkbox"
+              checked={successful}
+              onChange={(event) => setSuccessful(event.target.checked)}
+            />{" "}
+            Série concluída com sucesso
+          </label>
         )}
         {session.plan.pr && (
           <div className="pr-options">
@@ -1495,24 +1606,31 @@ function ExerciseCard({
 }
 function Oapu({
   session,
-  seconds,
+  state,
   update,
   run,
 }: {
   session: Session;
-  seconds: number;
+  state: AppState;
   update: (change: (s: Session) => Session) => Promise<void>;
   run: Run;
 }) {
-  const p = OAPU[session.plan.day as 1 | 3 | 5];
+  const p = oapuProtocol(session.plan.week, session.plan.day);
+  const previous = state.sessions
+    .filter(
+      (s) =>
+        s.id !== session.id &&
+        s.finishedAt !== null &&
+        s.plan.day === session.plan.day &&
+        s.plan.program === PROGRAM_ID,
+    )
+    .sort((a, b) => b.finishedAt! - a.finishedAt!)[0];
   const [side, setSide] = useState<"D" | "E">("D");
   const [assist, setAssist] = useState("");
   const [reps, setReps] = useState("");
   const [hold, setHold] = useState("");
   const [rpe, setRpe] = useState("");
   const [symptoms, setSymptoms] = useState("");
-  const block =
-    seconds < p.warmup * 60 ? 0 : seconds < (30 - p.cooldown) * 60 ? 1 : 3;
   async function save(event: React.FormEvent) {
     event.preventDefault();
     await run(async () => {
@@ -1541,27 +1659,17 @@ function Oapu({
     <section className="card oapu-card">
       <div className="section-title">
         <div>
-          <span className="eyebrow">BLOCO EXCLUSIVO · 30 MINUTOS</span>
+          <span className="eyebrow">PRIORIDADE DO TREINO · SEM CRONÔMETRO</span>
           <h2>One Arm Pull-up</h2>
           <p>
             {p.title} · RPE máximo {p.rpe} · sem falha
           </p>
         </div>
-        <div className="oapu-clock">
-          <Target size={20} />
-          <strong>{time(1800 - seconds)}</strong>
-          <span>restantes</span>
-        </div>
       </div>
       <div className="oapu-timeline">
         {["Aquecimento", "Skill", "Assistência / isometrias", "Cooldown"].map(
           (label, i) => (
-            <div
-              className={
-                i === block || (i === 2 && block === 1) ? "current" : ""
-              }
-              key={label}
-            >
+            <div key={label}>
               <span>{String(i + 1).padStart(2, "0")}</span>
               <strong>{label}</strong>
               <small>
@@ -1569,7 +1677,7 @@ function Oapu({
                   ? `${p.warmup} min`
                   : i === 3
                     ? `${p.cooldown} min`
-                    : "Dentro do orçamento técnico"}
+                    : "Sem limite de tempo"}
               </small>
             </div>
           ),
@@ -1580,10 +1688,27 @@ function Oapu({
           <strong>{p.skill}</strong>
         </p>
         <p>{p.support}</p>
+        <p>
+          Registros nesta sessão: direito{" "}
+          {session.oapu.filter((log) => log.side === "D").length}/{p.sets};
+          esquerdo {session.oapu.filter((log) => log.side === "E").length}/
+          {p.sets}. Cada registro corresponde a uma série de um braço.
+        </p>
+        {previous && (
+          <details>
+            <summary>Última sessão deste protocolo</summary>
+            {previous.oapu.map((log) => (
+              <p key={log.id}>
+                {log.side === "D" ? "Direito" : "Esquerdo"}: {log.reps} reps ·
+                assistência: {log.assistance} · RPE {log.rpe}. {log.symptoms}
+              </p>
+            ))}
+          </details>
+        )}
         <p className="subtle">
-          {30 - p.warmup - p.cooldown} minutos compartilhados entre skill,
-          assistência, descansos e transições. Alterne os braços. O bloco não
-          pode ser pulado para iniciar a força antes de 30 min.
+          Faça o unilateral antes das puxadas bilaterais. Alterne os braços; não
+          há tempo mínimo nem limite de duração. Registre cada série e o
+          tipo/quantidade de assistência para comparar condições iguais.
         </p>
       </div>
       <form onSubmit={(event) => void save(event)}>
@@ -1912,7 +2037,7 @@ function Profile({
               }
             />
           </Field>
-          <Field label="Segunda-feira inicial do ciclo">
+          <Field label="Data de referência do ciclo">
             <input
               required
               type="date"
@@ -1924,9 +2049,9 @@ function Profile({
           </Field>
         </div>
         <p className="subtle">
-          Janela de referência: 18h30–20h. Limite efetivo de sessão: 80 min.
-          OAPU assistido. Sono e estresse são registrados no check-in, não
-          presumidos diariamente.
+          Sem horários ou duração obrigatória. Treinos A–E disponíveis
+          livremente. OAPU assistido. Sono e estresse são registrados no
+          check-in, não presumidos diariamente.
         </p>
         <h3>Máximos — sem confundir passado e presente</h3>
         <div className="form-grid">
@@ -2080,8 +2205,8 @@ function Profile({
         </p>
         <p>
           Prescrição, dados executados e sugestões ficam separados. Não existe
-          treinamento até a falha no OAPU. O relógio geral segue mesmo fora da
-          tela, sem pausa do limite total.
+          treinamento até a falha no OAPU. Os treinos ficam disponíveis sem
+          cronômetro obrigatório ou limite de duração.
         </p>
       </section>
     </>

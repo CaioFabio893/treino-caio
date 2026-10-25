@@ -1,4 +1,27 @@
+# GitHub Pages — 25/10/2026
+
+Destino exclusivo: https://caiofabio893.github.io/treino-caio/ . Repositório público CaioFabio893/treino-caio, branch main. Pages ativado com build_type=workflow e HTTPS em 25/10/2026. Publicação por .github/workflows/pages.yml, com Node 24, types/lint/40 testes/build/check estático antes do deploy. Sem E2E/navegação, por pedido do usuário. Firebase continua desativado; script deploy:hosting removido. Nenhum acesso ao app/projeto da Louise.
+
+Programação: PROGRAMA-12-SEMANAS.md. Troca de origem: importar backup JSON para trazer dados antigos; não há migração automática de localStorage.
+
+## Histórico anterior (Firebase desativado)
+
+> Estado em 25/10/2026: Hosting de hybrid-strength-caio-2026 DESATIVADO por pedido do usuário. Firebase CLI confirmou sucesso. Não republicar no Firebase: destino solicitado será GitHub Pages, após próximas edições. Projeto Firebase não excluído; arquivos locais e histórico preservados. Não acessar nem alterar app/projeto da Louise.
+
+# Atualização de acessórios publicada — 18/10/2026
+
+Firebase confirmou sucesso: versão dc8b9a64ba5c3d91. Deploy exclusivo de Hosting em hybrid-strength-caio-2026, URL https://hybrid-strength-caio-2026.web.app/. Nenhum comando dirigido ao app da Louise. Sem alteração de plano/faturamento, Auth ou Firestore.
+
+36 testes unitários, typecheck, lint e build passaram. Sem navegação/E2E ou conferência visual por pedido do usuário. Se a aba antiga não atualizar, feche as abas do aplicativo e abra novamente; não apague dados locais. Sessões já iniciadas preservam a prescrição antiga. Detalhes em ACESSORIOS.md.
+
+## Publicações anteriores
+
 # Publicação — Hybrid Strength — 17/10/2026
+
+## Atualização vigente — 18/10/2026
+Versão `487ff6f192a82dc4`, publicada com sucesso somente em Hosting do projeto `hybrid-strength-caio-2026`. Novos treinos livres A–E, sem relógios/travas e com Treino completo/Semana completa. Conferido no endereço público após recarregar: cinco planos integrais na visão semanal. Screenshot em `docs/evidencias/semana-completa-publicada.jpg`. Nenhuma operação no projeto/app da Louise nesta rodada. A versão inicial abaixo permanece como histórico da primeira publicação.
+
+Se a aba mostrar a interface antiga, recarregar a página; não limpar o armazenamento local, pois contém os registros. O preview local desta rodada foi encerrado para não segurar bindings durante um futuro npm ci.
 
 ## Destino exclusivo autorizado
 - URL: https://hybrid-strength-caio-2026.web.app/

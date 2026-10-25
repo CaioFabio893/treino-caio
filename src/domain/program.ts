@@ -1,0 +1,250 @@
+import type { Exercise, Plan, Week } from "./model";
+import { varyAccessories } from "./accessories";
+
+export const PROGRAM_ID = "oapu-strength-12w-v2";
+export const TRAINING_DAYS = [1, 2, 3, 4, 5, 6];
+export const ROTATION =
+  "A → B → descanso → C → descanso → D → descanso → E → F → descanso → repetir";
+
+// Prescrição dos movimentos pesados; os dias de volume e técnica têm dose própria.
+export const PROGRAM_WEEKS: Week[] = [
+  [3, 6, 7, "Base e calibração"],
+  [4, 6, 7.5, "Acumular volume"],
+  [4, 5, 8, "Consolidar a base"],
+  [2, 5, 6, "Deload"],
+  [4, 4, 7.5, "Intensificar"],
+  [4, 3, 8, "Força progressiva"],
+  [4, 2, 8.5, "Duplas de qualidade"],
+  [2, 3, 6, "Deload"],
+  [3, 2, 8, "Especificidade"],
+  [3, 1, 8.5, "Singles submáximos"],
+  [2, 2, 6.5, "Taper"],
+  [3, 1, 9, "PR com prontidão"],
+].map((row, i) => ({
+  week: i + 1,
+  sets: Number(row[0]),
+  reps: Number(row[1]),
+  rpe: Number(row[2]),
+  label: String(row[3]),
+  phase:
+    i < 4
+      ? "Acumulação"
+      : i < 8
+        ? "Intensificação"
+        : i < 11
+          ? "Peaking"
+          : "PR Test",
+}));
+
+function exercise(
+  id: string,
+  name: string,
+  sets: number,
+  reps: number,
+  extra: Partial<Exercise> = {},
+): Exercise {
+  return {
+    id,
+    name,
+    sets,
+    reps,
+    load: null,
+    rpe: 8,
+    rest: 90,
+    ramp: 0,
+    priority: 2,
+    unit: "reps",
+    ...extra,
+  };
+}
+
+export function oapuProtocol(week: number, day: number) {
+  const reduced = [4, 8, 11, 12].includes(week);
+  const block = Math.floor((week - 1) / 4);
+  const technical = day === 3;
+  const sets = reduced ? 2 : day === 5 ? 2 : 3;
+  const reps = technical
+    ? 2
+    : day === 5
+      ? block === 0
+        ? "3–4"
+        : "2–3"
+      : block === 0
+        ? "2–3"
+        : "1–2";
+  const rpe = reduced ? 6 : technical ? 6 : day === 5 ? 7 : block === 0 ? 7 : 8;
+  return {
+    title: technical
+      ? "Técnica com mais assistência"
+      : day === 5
+        ? "Volume unilateral controlado"
+        : "Força unilateral prioritária",
+    sets,
+    reps,
+    rpe,
+    skill: `One-arm pull-up assistido · ${sets}×${reps} por braço`,
+    support:
+      week === 12
+        ? "Compare a assistência com registros anteriores. Tentativa livre somente se já estiver preparado; sem negativas máximas obrigatórias."
+        : "Registre cada lado e a assistência. Reduza assistência apenas após completar as séries com amplitude e controle, sem dor.",
+    warmup: 7,
+    cooldown: 5,
+  };
+}
+
+export function makeProgramPlan(week: number, day: number): Plan {
+  if (
+    !Number.isInteger(week) ||
+    week < 1 ||
+    week > 12 ||
+    !TRAINING_DAYS.includes(day)
+  )
+    throw new Error("Semana ou índice de treino inválido.");
+  const w = PROGRAM_WEEKS[week - 1];
+  const reduced = [4, 8, 11, 12].includes(week);
+  const heavy = (id: string, name: string, weighted = false): Exercise =>
+    exercise(
+      id,
+      name,
+      id === "deadlift" && week !== 12 ? Math.min(3, w.sets) : w.sets,
+      w.reps,
+      {
+        priority: 0,
+        rest: 180,
+        ramp: 240,
+        weighted,
+        progressive: true,
+        rpe: w.rpe,
+        ...(["pullup", "squat", "dip", "deadlift"].includes(id)
+          ? { lift: id as Exercise["lift"] }
+          : {}),
+        note: "Carga inicial a definir pelo RPE atual, não pelos recordes antigos. Sugestões do histórico são opcionais; sem aumento obrigatório por semana.",
+      },
+    );
+  const volume = (id: string, name: string, weighted = false): Exercise =>
+    exercise(id, name, reduced ? 2 : 3, week < 5 ? 6 : week < 9 ? 5 : 4, {
+      repsMax: week < 5 ? 8 : week < 9 ? 7 : 6,
+      priority: 0,
+      rest: 150,
+      weighted,
+      progressive: true,
+      rpe: reduced ? 6 : 7.5,
+    });
+  const accessory = (
+    id: string,
+    name: string,
+    sets: number,
+    reps: number,
+    extra: Partial<Exercise> = {},
+  ) => exercise(id, name, sets, reps, extra);
+  let exercises: Exercise[] = [];
+  if (day === 1)
+    exercises = [
+      heavy("pullup", "Barra fixa com lastro", true),
+      accessory("row", "Remada apoiada", 3, 8),
+      accessory("curl", "Rosca bíceps", 2, 10),
+    ];
+  if (day === 2)
+    exercises = [
+      heavy("squat", "Back squat"),
+      heavy("dip", "Dip com lastro", true),
+      accessory("leg-press", "Leg press", 2, 10, { repsMax: 15 }),
+      accessory("lateral", "Elevação lateral", 3, 12),
+      accessory("calf-standing", "Panturrilha em pé", 3, 10, { repsMax: 15 }),
+    ];
+  if (day === 3)
+    exercises = [
+      heavy("bench", "Supino reto com barra"),
+      exercise("overhead-press", "Desenvolvimento militar", 2, 6, {
+        repsMax: 8,
+        priority: 1,
+        progressive: true,
+        rpe: 7.5,
+        rest: 150,
+      }),
+      accessory("reverse", "Crucifixo invertido", 2, 12),
+      accessory("triceps-rope", "Tríceps na polia", 2, 10, { repsMax: 15 }),
+    ];
+  if (day === 4)
+    exercises = [
+      heavy("deadlift", "Levantamento terra"),
+      accessory("hamstring", "Mesa flexora", 3, 10),
+      accessory("hip-thrust", "Elevação pélvica", 2, 8, { repsMax: 12 }),
+      accessory("calf-seated", "Panturrilha sentada", 3, 12, { repsMax: 20 }),
+      accessory("cable-crunch", "Abdominal na polia", 3, 10, { repsMax: 15 }),
+    ];
+  if (day === 5)
+    exercises = [
+      volume("pullup-volume", "Barra com lastro — volume", true),
+      accessory("row-single", "Remada serrote", 2, 10, { perSide: true }),
+      accessory("facepull", "Facepull", 2, 12),
+      accessory("curl-scott", "Rosca Scott", 2, 10, { repsMax: 15 }),
+    ];
+  if (day === 6)
+    exercises = [
+      {
+        ...volume("paused-squat", "Back squat pausado"),
+        reps: week < 9 ? 4 : 3,
+        repsMax: week < 9 ? 6 : 5,
+      },
+      {
+        ...volume("dip-volume", "Dip — volume", true),
+        repsMax: week < 5 ? 10 : week < 9 ? 8 : 6,
+      },
+      accessory("extension", "Cadeira extensora", 2, 12),
+      accessory("lateral", "Elevação lateral", 2, 12),
+    ];
+  exercises = varyAccessories(exercises, week).map((e) => {
+    if (e.priority <= 1)
+      return reduced && !e.lift
+        ? { ...e, sets: Math.min(e.sets, 2), rpe: Math.min(e.rpe, w.rpe) }
+        : e;
+    // Acessórios crescem na base; menor volume conforme o pico se aproxima.
+    const cap =
+      week === 11
+        ? 1
+        : [4, 8, 9, 10, 12].includes(week)
+          ? 2
+          : week === 1
+            ? 2
+            : 3;
+    return {
+      ...e,
+      sets: Math.min(e.sets, cap),
+      rpe: reduced ? 6 : week === 1 ? 7 : week === 3 || week === 7 ? 8 : 7.5,
+    };
+  });
+  const pr = week === 12 && day !== 5;
+  if (week === 12) {
+    const test = (
+      {
+        1: ["pullup", "Barra fixa com lastro", true],
+        2: ["squat", "Back squat", false],
+        3: ["bench", "Supino reto com barra", false],
+        4: ["deadlift", "Levantamento terra", false],
+        6: ["dip", "Dip com lastro", true],
+      } as const
+    )[day as 1 | 2 | 3 | 4 | 6];
+    exercises = test ? [heavy(test[0], test[1], test[2])] : [];
+  }
+  return {
+    program: PROGRAM_ID,
+    week,
+    day,
+    name: `Treino ${"ABCDEF"[day - 1]}`,
+    focus: [
+      "One-arm + barra pesada",
+      "Back squat + dip pesado",
+      "One-arm técnico + supino",
+      "Terra + posteriores",
+      "One-arm + barra de volume",
+      "Back squat + dip de volume",
+    ][day - 1],
+    pull: [1, 3, 5].includes(day),
+    pr,
+    exercises,
+    removed: [],
+    estimatedSeconds: 0,
+    valid: true,
+  };
+}

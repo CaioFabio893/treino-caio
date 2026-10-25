@@ -1,4 +1,74 @@
 @import url("./tokens.css");
+.view-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 4px 0 24px;
+}
+.full-plan h2 {
+  margin: 14px 0 7px;
+}
+.full-plan .section-title {
+  align-items: flex-start;
+}
+.full-plan .prescription {
+  border-top: 1px solid var(--border);
+  padding: 20px 0;
+  margin: 0;
+}
+.protocol-preview {
+  padding: 16px;
+  border: 1px solid var(--accent-border);
+  border-radius: 9px;
+  margin-bottom: 20px;
+  background: var(--accent-dim);
+}
+.protocol-preview p {
+  font-size: 12px;
+  margin: 8px 0;
+}
+.protocol-preview small {
+  font-size: 11px;
+}
+.complete-workout {
+  display: grid;
+  gap: 20px;
+}
+.complete-workout .active-exercise {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+.optional-oapu > summary {
+  cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+}
+.optional-oapu .oapu-card {
+  margin: 16px 0 0;
+}
+.session-header > .subtle {
+  margin: 14px 0;
+}
+@media (max-width: 720px) {
+  .week-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .full-plan .section-title {
+    flex-wrap: wrap;
+  }
+  .full-plan .prescription {
+    grid-template-columns: 24px 1fr 85px;
+  }
+  .complete-workout .active-exercise {
+    padding: 18px;
+  }
+  .session-name .tag {
+    font-size: 8px;
+  }
+}
 @media (max-width: 720px) {
   .training-mode .topbar,
   .training-mode .bottom-nav {
@@ -720,7 +790,7 @@ small {
 }
 .week-strip {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
 }
 .day-card {

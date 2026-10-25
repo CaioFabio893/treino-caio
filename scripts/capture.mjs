@@ -11,9 +11,9 @@ try {
     await page.screenshot({path:`docs/evidencias/inicio-${name}.png`,animations:'disabled'})
     if(name==='mobile') {
       await page.getByRole('button',{name:'Iniciar treino',exact:true}).click()
-      await page.clock.fastForward(1800000)
-      await page.getByRole('spinbutton',{name:'Repetições',exact:true}).fill('6')
-      await page.getByRole('spinbutton',{name:'RPE real',exact:true}).fill('7')
+      const exercise=page.getByRole('region',{name:'Exercício: Weighted Pull-up',exact:true})
+      await exercise.getByRole('spinbutton',{name:'Repetições',exact:true}).fill('6')
+      await exercise.getByRole('spinbutton',{name:'RPE real',exact:true}).fill('7')
       await page.screenshot({path:'docs/evidencias/treino-mobile.png',animations:'disabled'})
     }
     await context.close()

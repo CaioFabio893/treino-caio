@@ -12,6 +12,6 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
 if ("serviceWorker" in navigator && import.meta.env.PROD)
   window.addEventListener("load", () => {
     void navigator.serviceWorker
-      .register("/sw.js")
+      .register(`${import.meta.env.BASE_URL}sw.js`)
       .catch(() => console.warn("Cache offline indisponível."));
   });

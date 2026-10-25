@@ -35,8 +35,7 @@ export function decode(raw: string): AppState {
     !record(p.trainingMax)
   )
     throw new Error("Perfil inválido.");
-  if (new Date(`${p.cycleStart}T12:00:00`).getDay() !== 1)
-    throw new Error("O ciclo deve começar em uma segunda-feira.");
+
   if (
     !["squat", "deadlift", "dip", "pullup", "bench"].every((k) =>
       number((p.historical as Record<string, unknown>)[k]),
@@ -74,7 +73,8 @@ export function decode(raw: string): AppState {
     const plan = s.plan;
     if (
       !number(plan.week, 1, 12) ||
-      !number(plan.day, 1, 5) ||
+      !number(plan.day, 1, 6) ||
+      !(plan.program === undefined || typeof plan.program === "string") ||
       typeof plan.name !== "string" ||
       typeof plan.focus !== "string" ||
       typeof plan.pull !== "boolean" ||
@@ -91,8 +91,10 @@ export function decode(raw: string): AppState {
         !record(e) ||
         typeof e.id !== "string" ||
         typeof e.name !== "string" ||
+        !(e.progressive === undefined || typeof e.progressive === "boolean") ||
         !number(e.sets, 1, 30) ||
         !number(e.reps, 1) ||
+        !(e.repsMax === undefined || number(e.repsMax, Number(e.reps))) ||
         !(e.load === null || number(e.load)) ||
         !number(e.rpe, 1, 10) ||
         !number(e.rest, 0, 3600) ||
