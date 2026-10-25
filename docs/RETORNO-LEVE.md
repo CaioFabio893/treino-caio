@@ -20,4 +20,6 @@ S12 vira janela opcional de teste, sem sequência automática90/95/100% do recor
 ## Preservação e uso
 Snapshots e registros já executados permanecem. Em treino já aberto, botão Atualizar cargas e % pelos meus RMs recalcula somente exercícios ainda sem séries; utiliza PC da sessão e histórico. Os RMs antigos permanecem como históricos provisórios; 135kg×6 não foi salvo como RM.
 
-Verificação: 56 testes unitários passaram, incluindo novos casos de entrada120, bloqueio de salto sem histórico, limite2,5kg após execução, falha/parcial e aplicação aos outros movimentos. Types/lint/build/publicação registrados em PUBLICACAO.md. Sem testes de navegação/E2E, conforme instrução do usuário. Nenhum acesso a app/projeto da Louise; Firebase continua desativado.
+Verificação: 57 testes unitários passaram, incluindo novos casos de entrada120, bloqueio de salto sem histórico, limite2,5kg após execução, falha/parcial e aplicação aos outros movimentos. Types/lint/build/publicação registrados em PUBLICACAO.md. Sem testes de navegação/E2E, conforme instrução do usuário. Nenhum acesso a app/projeto da Louise; Firebase continua desativado.
+
+Se a prescrição limitada ainda exige assistência na janela de PR, o app converte aquela sessão para calibração assistida (2×3, RPE6), sem classificá-la como teste/recorde.

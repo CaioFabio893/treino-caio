@@ -10,6 +10,33 @@ import { loadDescription, percentLoad, planLoads } from "./loads";
 import { substitute } from "./accessories";
 
 describe("prescrição por %RM e RPE", () => {
+  it("troca teste de PR por calibração quando a entrada requer assistência", () => {
+    const state = initialState();
+    const plan = makePlan(12, 1, state.profile, []);
+    expect(plan.pr).toBe(false);
+    expect(plan.exercises[0]).toMatchObject({
+      load: 0,
+      assistance: 17.5,
+      rpe: 6,
+    });
+    const s = startSession(state, plan, 1000);
+    expect(() =>
+      addSet(
+        s,
+        plan.exercises[0],
+        {
+          index: 0,
+          load: 0,
+          assistance: 17.5,
+          amount: 3,
+          rpe: 6,
+          successful: true,
+          ready: false,
+        },
+        2000,
+      ),
+    ).not.toThrow();
+  });
   it("começa em 120 kg no squat, abaixo dos 135 kg relatados, e não salta sem histórico", () => {
     const state = initialState();
     for (const week of [1, 2, 3, 5, 7, 10, 12]) {

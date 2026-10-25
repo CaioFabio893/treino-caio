@@ -154,7 +154,7 @@ export function planLoads(
   profile: Profile,
   sessions?: Session[],
 ): Plan {
-  return {
+  const result: Plan = {
     ...plan,
     exercises: plan.exercises.map((e) => {
       const ref = referenceFor(e, profile);
@@ -209,6 +209,21 @@ export function planLoads(
       };
     }),
   };
+  if (result.pr && result.exercises.some((e) => (e.assistance ?? 0) > 0)) {
+    return {
+      ...result,
+      pr: false,
+      focus: `${result.focus} · calibração assistida, sem PR`,
+      exercises: result.exercises.map((e) => ({
+        ...e,
+        sets: 2,
+        reps: 3,
+        rpe: 6,
+        note: `${e.note ?? ""} A referência requer assistência: esta sessão é de calibração, não um teste de PR.`,
+      })),
+    };
+  }
+  return result;
 }
 
 export function loadDescription(e: Exercise) {
