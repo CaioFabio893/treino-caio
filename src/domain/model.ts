@@ -35,6 +35,7 @@ export interface Exercise {
   note?: string;
   progressive?: boolean;
   percent?: number;
+  scheduledPercent?: number;
   rm?: number;
   rmSource?: "current" | "historical";
   referenceBodyweight?: number;

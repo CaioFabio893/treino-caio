@@ -1,15 +1,90 @@
-import type { Exercise, Plan, Profile } from "./model";
+import type { Exercise, Plan, Profile, Session } from "./model";
 
 export const HEAVY_PERCENT = [
-  75, 77.5, 80, 60, 82.5, 85, 87.5, 65, 90, 92.5, 72.5, 90,
+  60, 62.5, 65, 50, 67.5, 70, 72.5, 55, 75, 77.5, 60, 80,
 ];
-const VOLUME_PERCENT = [65, 67.5, 70, 55, 70, 72.5, 75, 60, 75, 77.5, 60, 60];
+const VOLUME_PERCENT = [55, 57.5, 60, 45, 60, 62.5, 65, 50, 65, 67.5, 50, 55];
 const PARENTS: Record<string, string> = {
   "pullup-volume": "pullup",
   "dip-volume": "dip",
   "paused-squat": "squat",
 };
 const MAIN = ["squat", "deadlift", "bench", "pullup", "dip"];
+
+export function gradualLoad(
+  e: Exercise,
+  plan: Plan,
+  profile: Profile,
+  sessions: Session[],
+  rm: number,
+  scheduled: { load: number; assistance: number },
+) {
+  const bw = e.weighted ? profile.bodyweight : 0;
+  const baseline = percentLoad(rm, percentageFor(e, 1), profile.increment, bw);
+  const prior = sessions
+    .filter(
+      (s) =>
+        s.finishedAt !== null &&
+        s.plan.program === plan.program &&
+        s.id.startsWith(`${profile.cycleStart}:`) &&
+        s.plan.exercises.some((x) => x.id === e.id) &&
+        s.sets.some((x) => x.exerciseId === e.id),
+    )
+    .sort((a, b) => b.finishedAt! - a.finishedAt!)[0];
+  if (!prior) {
+    const target =
+      scheduled.load - scheduled.assistance <=
+      baseline.load - baseline.assistance
+        ? scheduled
+        : baseline;
+    return {
+      target,
+      reason:
+        "Sem execução recente registrada deste movimento: manter a carga leve da primeira semana, mesmo ao selecionar semanas posteriores.",
+    };
+  }
+  const old = prior.plan.exercises.find((x) => x.id === e.id)!;
+  const logs = prior.sets
+    .filter((x) => x.exerciseId === e.id)
+    .sort((a, b) => a.index - b.index);
+  const net = Math.min(...logs.map((x) => x.load - (x.assistance ?? 0)));
+  const complete =
+    logs.length === old.sets &&
+    logs.every(
+      (x, i) =>
+        x.index === i &&
+        x.successful &&
+        x.amount >= (old.repsMax ?? old.reps) &&
+        x.rpe <= Math.min(old.rpe, e.rpe) &&
+        x.rpe <= 8 &&
+        x.load === logs[0].load &&
+        (x.assistance ?? 0) === (logs[0].assistance ?? 0),
+    );
+  const changedBw = e.weighted && prior.bodyweight !== profile.bodyweight;
+  const step =
+    complete && !changedBw && profile.increment <= 2.5 ? profile.increment : 0;
+  let ceiling = changedBw
+    ? Math.min(net, baseline.load - baseline.assistance)
+    : net + step;
+  if (logs.some((x) => !x.successful || x.rpe >= e.rpe + 1)) {
+    const effective = (bw + net) * 0.95 - bw;
+    ceiling = Math.min(
+      ceiling,
+      Math.floor((effective + 1e-8) / profile.increment) * profile.increment,
+    );
+  }
+  const requested = scheduled.load - scheduled.assistance;
+  const capped = Math.min(requested, ceiling);
+  return {
+    target:
+      capped < 0
+        ? { load: 0, assistance: Math.min(bw, -capped) }
+        : { load: capped, assistance: 0 },
+    reason: step
+      ? "Aumento limitado a um incremento (máximo 2,5 kg), após execução completa dentro do RPE; o calendário não autoriza saltos."
+      : "Sem critérios para aumentar: carga mantida ou reduzida. Complete a dose com controle e dentro do RPE antes de subir.",
+  };
+}
 
 export function referenceFor(e: Exercise, profile: Profile) {
   const own = profile.referenceRm?.[e.id];
@@ -68,13 +143,17 @@ export function percentageFor(e: Exercise, week: number) {
     return [4, 8, 11, 12].includes(week) ? 55 : week < 5 ? 67.5 : 70;
   // Acessórios: faixa mais alta de reps usa referência mais leve, sempre subordinada ao RPE.
   return [4, 8, 11, 12].includes(week)
-    ? 45
+    ? 40
     : (e.repsMax ?? e.reps) >= 15
-      ? 55
-      : 65;
+      ? 50
+      : 55;
 }
 
-export function planLoads(plan: Plan, profile: Profile): Plan {
+export function planLoads(
+  plan: Plan,
+  profile: Profile,
+  sessions?: Session[],
+): Plan {
   return {
     ...plan,
     exercises: plan.exercises.map((e) => {
@@ -93,22 +172,40 @@ export function planLoads(plan: Plan, profile: Profile): Plan {
           note: `Informe o RM deste exercício no perfil para calcular kg; até lá, escolha a carga pelo RPE.${e.perSide ? " Quantidade por lado; carga por mão para halteres." : ""}`,
         };
       const bw = e.weighted ? profile.bodyweight : 0;
-      const calculated = percentLoad(ref.rm, percent, profile.increment, bw);
-      const attempts = plan.pr
-        ? [90, 95, 100].map((p) => {
-            const target = percentLoad(ref.rm, p, profile.increment, bw);
-            return { percent: p, ...target, assistance: 0 };
-          })
-        : undefined;
+      let calculated = percentLoad(ref.rm, percent, profile.increment, bw);
+      let capNote = "";
+      if (sessions !== undefined) {
+        const limited = gradualLoad(
+          e,
+          plan,
+          profile,
+          sessions,
+          ref.rm,
+          calculated,
+        );
+        calculated = limited.target;
+        capNote = limited.reason;
+      }
+      const attempts = undefined;
       return {
         ...e,
-        percent,
+        percent:
+          sessions !== undefined
+            ? Number(
+                (
+                  ((bw + calculated.load - calculated.assistance) /
+                    (bw + ref.rm)) *
+                  100
+                ).toFixed(2),
+              )
+            : percent,
+        scheduledPercent: percent,
         rm: ref.rm,
         rmSource: ref.source,
         referenceBodyweight: bw,
-        ...(attempts?.[0] ?? calculated),
+        ...calculated,
         attempts,
-        note: `${ref.source === "historical" ? "RM histórico provisório: confirme seu RM atual no perfil." : "RM atual informado no perfil."} Percentual é ponto de partida; reduza a carga se exceder RPE ${e.rpe}. Arredondamento conservador ao incremento configurado.${bw ? " Percentual sobre peso corporal + RM de lastro; kg prescritos são lastro ou assistência." : ""}${e.perSide ? " Repetições por lado; carga por mão para halteres." : ""}${e.id === "paused-squat" && !profile.referenceRm?.[e.id] ? " Referência do back squat livre com percentual menor para a pausa." : ""}${plan.pr ? " Tentativas de 90/95/100% são referências; só avance com prontidão. PR acima disso é decisão manual após avaliar a tentativa anterior. Se a abertura percentual ficar abaixo do peso corporal, usa-se peso corporal sem assistência somente se o RPE permitir; o percentual efetivo fica maior que o alvo." : ""}`,
+        note: `${ref.source === "historical" ? "RM histórico provisório: confirme seu RM atual no perfil." : "RM atual informado no perfil."} Percentual é ponto de partida; reduza a carga se exceder RPE ${e.rpe}. Comece confortável; não force a carga para cumprir o calendário. ${capNote} Arredondamento conservador ao incremento configurado.${bw ? " Percentual sobre peso corporal + RM de lastro; kg prescritos são lastro ou assistência." : ""}${e.perSide ? " Repetições por lado; carga por mão para halteres." : ""}${e.id === "paused-squat" && !profile.referenceRm?.[e.id] ? " Referência do back squat livre com percentual menor para a pausa." : ""}${plan.pr ? " Janela opcional de teste: sem escalada automática para 100% do RM antigo. Escolha cada tentativa pelo desempenho recente e prontidão; pode repetir uma carga confortável em vez de testar PR." : ""}`,
       };
     }),
   };

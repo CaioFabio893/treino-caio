@@ -33,8 +33,8 @@ describe("programação de força, hipertrofia e one-arm", () => {
   });
   it("varia semanalmente a dose pesada e reduz acessórios antes dos testes", () => {
     expect(PROGRAM_WEEKS).toHaveLength(12);
-    expect(makePlan(2, 2).exercises[0].sets).toBeGreaterThan(
-      makePlan(1, 2).exercises[0].sets,
+    expect(makePlan(2, 2).exercises[0].rpe).toBeGreaterThan(
+      makePlan(1, 2).exercises[0].rpe,
     );
     expect(makePlan(7, 2).exercises[0].reps).toBeLessThan(
       makePlan(1, 2).exercises[0].reps,
@@ -62,7 +62,7 @@ describe("programação de força, hipertrofia e one-arm", () => {
     }
   });
   it("sugere progressão de supino apenas após execução completa e controlada", () => {
-    let session = startSession(initialState(), makePlan(1, 3), 1000);
+    let session = startSession(initialState(), makePlan(5, 3), 1000);
     const e = session.plan.exercises[0];
     for (let index = 0; index < e.sets; index++)
       session = addSet(
@@ -80,9 +80,9 @@ describe("programação de força, hipertrofia e one-arm", () => {
       );
     session = { ...session, finishedAt: 3000 };
     expect(accessoryProgression(e, [session], "next", 2.5)?.load).toBe(82.5);
-    const changed = makePlan(2, 3).exercises[0];
+    const changed = makePlan(6, 3).exercises[0];
     expect(accessoryProgression(changed, [session], "next", 2.5)).toMatchObject(
-      { load: 80, amount: 6 },
+      { load: 80, amount: 4 },
     );
     expect(session.sets[0].load).toBe(80);
   });

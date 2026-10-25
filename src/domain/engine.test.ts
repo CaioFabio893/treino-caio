@@ -75,7 +75,7 @@ describe("ciclo de 12 semanas", () => {
       sets: 3,
       reps: 6,
       load: null,
-      rpe: 7,
+      rpe: 6,
     });
     expect(makePlan(1, 3).exercises[0]).toMatchObject({
       id: "bench",
@@ -97,7 +97,7 @@ describe("ciclo de 12 semanas", () => {
     expect(makePlan(11, 2).exercises[0]).toMatchObject({
       sets: 2,
       reps: 2,
-      rpe: 6.5,
+      rpe: 6,
     });
     expect(
       makePlan(7, 6).exercises.find((e) => e.id === "dip-volume")?.rpe,

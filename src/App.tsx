@@ -170,7 +170,7 @@ export default function App() {
       s.id.startsWith(`${state.profile.cycleStart}:`) &&
       s.plan.program === PROGRAM_ID,
   );
-  const plan = makePlan(week, day, state.profile);
+  const plan = makePlan(week, day, state.profile, state.sessions);
   const w = WEEKS[week - 1];
   useEffect(() => {
     try {
@@ -216,7 +216,10 @@ export default function App() {
   async function begin() {
     await run(async () => {
       await commit((s) => {
-        const created = startSession(s, makePlan(week, day, s.profile));
+        const created = startSession(
+          s,
+          makePlan(week, day, s.profile, s.sessions),
+        );
         return s.sessions.some((x) => x.id === created.id)
           ? s
           : { ...s, sessions: [...s.sessions, created] };
@@ -675,7 +678,12 @@ export default function App() {
                   {TRAINING_DAYS.map((index) => (
                     <PlanPreview
                       key={index}
-                      plan={makePlan(week, index, state.profile)}
+                      plan={makePlan(
+                        week,
+                        index,
+                        state.profile,
+                        state.sessions,
+                      )}
                       onOpen={() => {
                         setDay(index);
                         setShowAll(false);
@@ -969,6 +977,11 @@ function LoadBasis({ exercise: e }: { exercise: Exercise }) {
         ? ` · PC de referência ${e.referenceBodyweight} kg`
         : ""}{" "}
       · RPE ≤ {e.rpe}
+      {e.scheduledPercent !== undefined &&
+      e.percent !== undefined &&
+      Math.abs(e.scheduledPercent - e.percent) > 0.01
+        ? ` · alvo semanal ${e.scheduledPercent}%, limitado/ajustado pela progressão e arredondamento`
+        : ""}
     </small>
   );
 }
@@ -1115,10 +1128,30 @@ function Workout({
             void run(
               () =>
                 update((s) => {
-                  const updated = planLoads(s.plan, {
-                    ...state.profile,
-                    bodyweight: s.bodyweight,
-                  });
+                  const fresh = makePlan(s.plan.week, s.plan.day);
+                  const refreshed = {
+                    ...s.plan,
+                    exercises: s.plan.exercises.map((old) => {
+                      if (s.sets.some((log) => log.exerciseId === old.id))
+                        return old;
+                      const current = fresh.exercises.find(
+                        (e) =>
+                          e.id === old.id ||
+                          alternatives(e).some(([id]) => id === old.id),
+                      );
+                      return current
+                        ? { ...old, ...current, id: old.id, name: old.name }
+                        : old;
+                    }),
+                  };
+                  const updated = planLoads(
+                    refreshed,
+                    {
+                      ...state.profile,
+                      bodyweight: s.bodyweight,
+                    },
+                    state.sessions,
+                  );
                   return {
                     ...s,
                     plan: {
@@ -1134,7 +1167,7 @@ function Workout({
                       {
                         at: Date.now(),
                         reason:
-                          "RM/% atualizados apenas nos exercícios sem séries registradas.",
+                          "Dose, RPE e RM/% atualizados apenas nos exercícios sem séries registradas.",
                         decision:
                           "Prescrições recalculadas; histórico executado preservado.",
                       },

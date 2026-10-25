@@ -101,7 +101,11 @@ export function decode(raw: string): AppState {
         typeof e.id !== "string" ||
         typeof e.name !== "string" ||
         !(e.progressive === undefined || typeof e.progressive === "boolean") ||
-        !(e.percent === undefined || number(e.percent, 0.1, 100)) ||
+        !(e.percent === undefined || number(e.percent, 0, 100)) ||
+        !(
+          e.scheduledPercent === undefined ||
+          number(e.scheduledPercent, 0.1, 100)
+        ) ||
         !(e.rm === undefined || number(e.rm, 0.1)) ||
         !(
           e.rmSource === undefined ||

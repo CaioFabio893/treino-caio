@@ -7,7 +7,7 @@ import {
 import { addSet, initialState, makePlan, startSession } from "./engine";
 import type { Readiness } from "./model";
 
-function execution(id = "row", amount = 12, rpe = 8, count = 3) {
+function execution(id = "row", amount = 12, rpe = 7, count = 3) {
   let s = startSession(initialState(), makePlan(3, 1), 100000);
   if (id === "farmer")
     s.plan.exercises.push({
@@ -49,7 +49,7 @@ describe("acessórios por bloco e progressão optativa", () => {
     );
     expect(makePlan(5, 1).exercises[1].id).toBe("row-cable");
     expect(makePlan(5, 1).exercises[0].id).toBe("pullup");
-    expect(makePlan(5, 1).exercises[0].sets).toBe(4);
+    expect(makePlan(5, 1).exercises[0].sets).toBe(3);
   });
   it("reduz acessórios no deload, peaking, taper e os retira dos testes PR", () => {
     expect(makePlan(4, 1).exercises[1]).toMatchObject({ sets: 2, rpe: 6 });

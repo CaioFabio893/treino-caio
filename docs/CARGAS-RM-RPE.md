@@ -1,3 +1,5 @@
+> Pedido vigente: começar leve em todos os exercícios. Entrada a 60% nos principais (squat 120 kg na referência histórica 200), RPE 6; aumentos limitados por execução real, sem salto de calendário ou 100% automático em S12. Leia docs/RETORNO-LEVE.md (RETORNO-LEVE.md nesta pasta). As tabelas/cargas anteriores abaixo são históricas quando divergirem.
+
 # Cargas por %RM + RPE — 25/10/2026
 
 Pedido vigente: exibir kg e percentual planejados no treino, combinando % de RM com RPE, sem perder a programação A–F de 12 semanas.

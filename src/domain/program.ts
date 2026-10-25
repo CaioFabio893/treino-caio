@@ -1,4 +1,4 @@
-import type { Exercise, Plan, Profile, Week } from "./model";
+import type { Exercise, Plan, Profile, Session, Week } from "./model";
 import { HEAVY_PERCENT, planLoads } from "./loads";
 import { varyAccessories } from "./accessories";
 
@@ -9,18 +9,18 @@ export const ROTATION =
 
 // Prescrição dos movimentos pesados; os dias de volume e técnica têm dose própria.
 export const PROGRAM_WEEKS: Week[] = [
-  [3, 6, 7, "Base e calibração"],
-  [4, 6, 7.5, "Acumular volume"],
-  [4, 5, 8, "Consolidar a base"],
+  [3, 6, 6, "Base e calibração"],
+  [3, 6, 6.5, "Acumular volume"],
+  [3, 6, 7, "Consolidar a base"],
   [2, 5, 6, "Deload"],
-  [4, 4, 7.5, "Intensificar"],
-  [4, 3, 8, "Força progressiva"],
-  [4, 2, 8.5, "Duplas de qualidade"],
+  [3, 5, 7, "Intensificar"],
+  [3, 4, 7.5, "Força progressiva"],
+  [3, 3, 8, "Triplas controladas"],
   [2, 3, 6, "Deload"],
-  [3, 2, 8, "Especificidade"],
-  [3, 1, 8.5, "Singles submáximos"],
-  [2, 2, 6.5, "Taper"],
-  [3, 1, 9, "PR com prontidão"],
+  [3, 3, 8, "Especificidade"],
+  [2, 2, 8, "Duplas submáximas"],
+  [2, 2, 6, "Taper"],
+  [3, 1, 8.5, "PR com prontidão"],
 ].map((row, i) => ({
   week: i + 1,
   sets: Number(row[0]),
@@ -74,7 +74,16 @@ export function oapuProtocol(week: number, day: number) {
       : block === 0
         ? "2–3"
         : "1–2";
-  const rpe = reduced ? 6 : technical ? 6 : day === 5 ? 7 : block === 0 ? 7 : 8;
+  const rpe =
+    reduced || week <= 2
+      ? 6
+      : technical
+        ? 6
+        : day === 5
+          ? 7
+          : block === 0
+            ? 7
+            : 8;
   return {
     title: technical
       ? "Técnica com mais assistência"
@@ -98,6 +107,7 @@ export function makeProgramPlan(
   week: number,
   day: number,
   profile?: Profile,
+  sessions?: Session[],
 ): Plan {
   if (
     !Number.isInteger(week) ||
@@ -134,7 +144,7 @@ export function makeProgramPlan(
       rest: 150,
       weighted,
       progressive: true,
-      rpe: reduced ? 6 : 7.5,
+      rpe: reduced || week <= 2 ? 6 : 7,
     });
   const accessory = (
     id: string,
@@ -165,7 +175,7 @@ export function makeProgramPlan(
         repsMax: 8,
         priority: 1,
         progressive: true,
-        rpe: 7.5,
+        rpe: week <= 2 ? 6 : 7,
         rest: 150,
       }),
       accessory("reverse", "Crucifixo invertido", 2, 12),
@@ -217,7 +227,7 @@ export function makeProgramPlan(
     return {
       ...e,
       sets: Math.min(e.sets, cap),
-      rpe: reduced ? 6 : week === 1 ? 7 : week === 3 || week === 7 ? 8 : 7.5,
+      rpe: reduced || week <= 2 ? 6 : week < 7 ? 7 : 7.5,
     };
   });
   const pr = week === 12 && day !== 5;
@@ -253,5 +263,5 @@ export function makeProgramPlan(
     estimatedSeconds: 0,
     valid: true,
   };
-  return profile ? planLoads(plan, profile) : plan;
+  return profile ? planLoads(plan, profile, sessions) : plan;
 }
