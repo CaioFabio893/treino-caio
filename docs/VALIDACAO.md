@@ -1,3 +1,9 @@
+## Publicação concluída — 25/10/2026
+
+GitHub Actions confirmou sucesso: https://github.com/CaioFabio893/treino-caio/actions/runs/40230345362 . Código publicado: commit 5762fb82067f2227eb5c9315c92d403dc561c910. URL https://caiofabio893.github.io/treino-caio/ respondeu HTTP 200; JS/CSS responderam HTTP 200 e bundle contém program=oapu-strength-12w-v2 e nova ficha. Manifest relativo, worker versionado e lista offline conferidos por HTTP, sem browser. Hash do JS local Windows difere do build Linux do Actions; conferência de versão por commit do deploy e identificador do programa, não por igualdade byte a byte.
+
+40 testes, tipos, lint, build e check estático passaram localmente e pipeline concluiu com sucesso no GitHub. Sem navegação/E2E ou validação visual. Firebase segue desativado; nenhum acesso ao projeto/app da Louise.
+
 ## Rodada 25/10/2026 — programação de 12 semanas e GitHub Pages
 
 40 testes unitários passaram; typecheck e lint passaram, build e check estático de base/manifest/precache passaram. Sem navegação, E2E, screenshots ou teste visual por pedido do usuário. Nenhum teste de Firestore nesta rodada (regras inalteradas). Resultados anteriores abaixo são históricos. Conferência final após os últimos ajustes será registrada na publicação.
