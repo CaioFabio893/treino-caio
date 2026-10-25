@@ -140,7 +140,7 @@ export function percentageFor(e: Exercise, week: number) {
   if (e.id === "pullup-volume" || e.id === "dip-volume")
     return VOLUME_PERCENT[week - 1];
   if (e.id === "overhead-press")
-    return [4, 8, 11, 12].includes(week) ? 55 : week < 5 ? 67.5 : 70;
+    return [4, 8, 11, 12].includes(week) ? 45 : week < 5 ? 55 : 60;
   // Acessórios: faixa mais alta de reps usa referência mais leve, sempre subordinada ao RPE.
   return [4, 8, 11, 12].includes(week)
     ? 40

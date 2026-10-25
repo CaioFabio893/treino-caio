@@ -101,7 +101,9 @@ describe("prescrição por %RM e RPE", () => {
     expect(makePlan(1, 3, state.profile, []).exercises[0].load).toBe(100);
     expect(makePlan(1, 4, state.profile, []).exercises[0].load).toBe(130);
     expect(makePlan(1, 2, state.profile, []).exercises[1].load).toBe(25);
-    state.profile.referenceRm = { row: 100 };
+    state.profile.referenceRm = { row: 100, "overhead-press": 100 };
+    expect(makePlan(1, 3, state.profile, []).exercises[1].load).toBe(55);
+    expect(makePlan(4, 3, state.profile, []).exercises[1].load).toBe(45);
     expect(
       makePlan(10, 1, state.profile, []).exercises[1].load,
     ).toBeLessThanOrEqual(55);
