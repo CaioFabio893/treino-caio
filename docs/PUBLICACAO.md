@@ -1,3 +1,7 @@
+## Retorno leve publicado — 25/10/2026
+
+Código c51d88fcf4e9fad484b164caae43b426fc40eb9e, pipeline https://github.com/CaioFabio893/treino-caio/actions/runs/40233575458 concluído com sucesso. Site e JS HTTP200, marcadores de limite por histórico e calibração assistida presentes. 57 testes unitários passaram; types/lint/build/check estático aprovados pelo pipeline. Sem testes de navegação/E2E. Ver RETORNO-LEVE.md. Início de squat120kg/RPE6 na referência200kg; demais entradas reduzidas, sem salto por calendário. Firebase desativado, Louise intocada.
+
 ## %RM + RPE publicado — 25/10/2026
 
 Commit de código d36fe0b963f30592bda0aaa4c59d4ae9b867a3e9. Pipeline https://github.com/CaioFabio893/treino-caio/actions/runs/40231316455 concluiu com sucesso. Site https://caiofabio893.github.io/treino-caio/ e JS HTTP 200; bundle contém campos de RM atual e ação de recálculo. 52 testes unitários, types/lint/build e check estático passaram. Sem navegação/E2E/validação visual. Detalhes em CARGAS-RM-RPE.md. Firebase segue desativado; não houve acesso à Louise.
