@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import {
   PROGRAM_ID,
+  WEEKDAY_LABELS,
   ROTATION,
   TRAINING_DAYS,
   oapuProtocol,
@@ -118,7 +119,7 @@ export default function App() {
     try {
       const raw: unknown = JSON.parse(
         localStorage.getItem(
-          `hybrid-strength:selection:${state.profile.cycleStart}`,
+          `hybrid-strength:selection:${state.profile.cycleStart}:${PROGRAM_ID}`,
         ) ?? "null",
       );
       if (
@@ -139,20 +140,23 @@ export default function App() {
     }
     return { week: 1, day: 1 };
   });
-  const latestOpen = state.sessions
-    .filter(
-      (s) =>
-        s.finishedAt === null &&
-        s.id.startsWith(`${state.profile.cycleStart}:`) &&
-        s.plan.program === PROGRAM_ID,
-    )
-    .at(-1);
   const [page, setPage] = useState<Page>("inicio");
-  const [week, setWeek] = useState(
-    latestOpen?.plan.week ?? savedSelection.week,
-  );
+  // Uma sessão aberta nunca substitui a escolha explícita do usuário.
+  const [week, setWeek] = useState(savedSelection.week);
   const [showAll, setShowAll] = useState(false);
-  const [day, setDay] = useState(latestOpen?.plan.day ?? savedSelection.day);
+  const [day, setDay] = useState(savedSelection.day);
+  const selectionRevision = useRef(0);
+  function chooseDay(value: number) {
+    selectionRevision.current++;
+    setDay(value);
+    setShowAll(false);
+    go("treino");
+  }
+  function chooseWeek(value: number) {
+    selectionRevision.current++;
+    setWeek(value);
+    setShowAll(false);
+  }
   const [message, setMessage] = useState("");
   const [error, setError] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -175,7 +179,7 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem(
-        `hybrid-strength:selection:${state.profile.cycleStart}`,
+        `hybrid-strength:selection:${state.profile.cycleStart}:${PROGRAM_ID}`,
         JSON.stringify({ week, day }),
       );
     } catch {
@@ -214,6 +218,7 @@ export default function App() {
     window.scrollTo({ top: 0 });
   }
   async function begin() {
+    const revision = selectionRevision.current;
     await run(async () => {
       await commit((s) => {
         const created = startSession(
@@ -224,6 +229,7 @@ export default function App() {
           ? s
           : { ...s, sessions: [...s.sessions, created] };
       });
+      if (selectionRevision.current !== revision) return;
       setShowAll(false);
       go("treino");
     });
@@ -534,7 +540,7 @@ export default function App() {
                     <span className="eyebrow">
                       O PLANO É SIMPLES. A EXECUÇÃO É SUA.
                     </span>
-                    <h3>Seus treinos A–E</h3>
+                    <h3>Seus treinos A–F</h3>
                   </div>
                   <button
                     className="text-button"
@@ -543,35 +549,48 @@ export default function App() {
                       go("treino");
                     }}
                   >
-                    Ver semana completa <ArrowRight size={15} />
+                    Ver todos os treinos <ArrowRight size={15} />
                   </button>
                 </div>
                 <div className="week-strip">
-                  {TRAINING_DAYS.map((d) => (
-                    <button
-                      key={d}
-                      className={`day-card ${day === d ? "today" : ""}`}
-                      onClick={() => {
-                        setDay(d);
-                        setShowAll(false);
-                        go("treino");
-                      }}
-                    >
-                      <span>{workoutName(d)}</span>
-                      <div className="day-icon">
-                        <Dumbbell size={20} />
-                      </div>
-                      <strong>
-                        {[1, 3, 5].includes(d) ? "Pull" : "Push & Legs"}
-                      </strong>
-                      <small>
-                        {[1, 3, 5].includes(d)
-                          ? "OAPU + força"
-                          : "Força + volume"}
-                      </small>
-                    </button>
-                  ))}
+                  {TRAINING_DAYS.map((d) => {
+                    const summary = makePlan(week, d);
+                    return (
+                      <button
+                        key={d}
+                        className={`day-card ${day === d ? "today" : ""}`}
+                        onClick={() => {
+                          chooseDay(d);
+                        }}
+                      >
+                        <span>
+                          {workoutName(d)} · {WEEKDAY_LABELS[d - 1]}
+                        </span>
+                        <div className="day-icon">
+                          <Dumbbell size={20} />
+                        </div>
+                        <strong>
+                          {summary.pr
+                            ? `Teste: ${summary.exercises[0]?.name ?? summary.focus}`
+                            : summary.focus}
+                        </strong>
+                        <small>
+                          {!summary.exercises.length && !summary.pull
+                            ? "Sem treino de força"
+                            : summary.pull
+                              ? `One-arm · RPE ≤ ${oapuProtocol(week, d).rpe}`
+                              : `RPE principal ≤ ${summary.exercises[0]?.rpe ?? WEEKS[week - 1].rpe}`}
+                        </small>
+                      </button>
+                    );
+                  })}
                 </div>
+                <p className="subtle">
+                  Distribuição sugerida em sete dias: one-arm 3×, dip 2× e back
+                  squat 2× por semana. Domingo é descanso. As letras continuam
+                  livres, sem bloqueio por data. Na semana de testes, priorize
+                  recuperação e não force todos os PRs.
+                </p>
               </section>
               <div className="bottom-grid">
                 <section className="card">
@@ -645,14 +664,14 @@ export default function App() {
             <>
               <PageHeading
                 eyebrow="SEUS TREINOS, NO SEU RITMO"
-                title="Treinos A–E"
+                title="Treinos A–F"
                 text="Abra qualquer treino quando quiser. Consulte o plano completo ou registre suas séries sem cronômetro e sem travas de calendário."
               />
               <PlanSelect
                 week={week}
                 day={day}
-                setWeek={setWeek}
-                setDay={setDay}
+                setWeek={chooseWeek}
+                setDay={chooseDay}
               />
               <div
                 className="view-switch"
@@ -685,8 +704,7 @@ export default function App() {
                         state.sessions,
                       )}
                       onOpen={() => {
-                        setDay(index);
-                        setShowAll(false);
+                        chooseDay(index);
                       }}
                     />
                   ))}
@@ -726,7 +744,7 @@ export default function App() {
                     className={`card week-tile ${week === wk.week ? "chosen" : ""}`}
                     key={wk.week}
                     onClick={() => {
-                      setWeek(wk.week);
+                      chooseWeek(wk.week);
                       go("treino");
                     }}
                   >
@@ -751,7 +769,7 @@ export default function App() {
                     <small>
                       {wk.week === 12
                         ? "Testes com prontidão · sem 105% automático"
-                        : "6 treinos · ciclo contínuo com descansos"}
+                        : "6 treinos · 7 dias · domingo descanso"}
                     </small>
                     <ArrowRight size={18} />
                   </button>
@@ -1034,8 +1052,8 @@ function PlanPreview({
         </div>
       )}
       <p className="subtle">
-        {ROTATION}. Selecione a semana de preparação (1–12) em que está;
-        continue a sequência sem reiniciar em A toda segunda-feira.
+        {ROTATION}. Selecione a semana de preparação (1–12) em que está; esta
+        distribuição é uma sugestão semanal, sem bloquear outros treinos.
       </p>
       <div className="exercise-preview">
         {plan.exercises.map((e, i) => (
@@ -1068,7 +1086,11 @@ function PlanPreview({
         ))}
       </div>
       {!plan.exercises.length && (
-        <p>Treino técnico de OAPU, sem testes de força.</p>
+        <p>
+          {plan.pull
+            ? "Treino técnico de OAPU, sem testes de força."
+            : "Descanso e recuperação, sem teste de força."}
+        </p>
       )}
       {onBegin && (
         <button className="button primary" onClick={onBegin}>
@@ -1204,8 +1226,14 @@ function Workout({
       {!session.plan.exercises.length && (
         <section className="card">
           <Empty
-            title="Treino técnico"
-            text="Consulte o protocolo de OAPU acima. Não há teste de força neste treino."
+            title={
+              session.plan.pull ? "Treino técnico" : "Descanso e recuperação"
+            }
+            text={
+              session.plan.pull
+                ? "Consulte o protocolo de OAPU acima. Não há teste de força neste treino."
+                : "Não há exercício ou teste de força prescrito nesta sessão."
+            }
           />
         </section>
       )}

@@ -1,3 +1,5 @@
+> VIGENTE — 27/10/2026: divisão semanal v3 A–F, seleção corrigida e frequências por sete dias. Leia docs/CORRECAO-SEMANA-E-SELECAO.md. NÃO executar testes nesta rodada; OpenCode fará a validação. Resultados e divisão antigos abaixo são históricos.
+
 > Pedido vigente: começar leve em todos os exercícios. Entrada a 60% nos principais (squat 120 kg na referência histórica 200), RPE 6; aumentos limitados por execução real, sem salto de calendário ou 100% automático em S12. Leia docs/RETORNO-LEVE.md (RETORNO-LEVE.md nesta pasta). As tabelas/cargas anteriores abaixo são históricas quando divergirem.
 
 > Atualização vigente: cargas calculadas por %RM + RPE, com RMs atuais configuráveis e histórico identificado como provisório. Leia docs/CARGAS-RM-RPE.md (ou CARGAS-RM-RPE.md nesta pasta). As frases antigas sobre cargas sempre vazias foram substituídas por este pedido. Sem navegação/E2E.

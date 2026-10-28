@@ -2,10 +2,18 @@ import type { Exercise, Plan, Profile, Session, Week } from "./model";
 import { HEAVY_PERCENT, planLoads } from "./loads";
 import { varyAccessories } from "./accessories";
 
-export const PROGRAM_ID = "oapu-strength-12w-v2";
+export const PROGRAM_ID = "oapu-strength-weekly-v3";
 export const TRAINING_DAYS = [1, 2, 3, 4, 5, 6];
+export const WEEKDAY_LABELS = [
+  "Segunda",
+  "Terça",
+  "Quarta",
+  "Quinta",
+  "Sexta",
+  "Sábado",
+];
 export const ROTATION =
-  "A → B → descanso → C → descanso → D → descanso → E → F → descanso → repetir";
+  "Seg A → Ter B → Qua C → Qui D → Sex E → Sáb F → Dom descanso";
 
 // Prescrição dos movimentos pesados; os dias de volume e técnica têm dose própria.
 export const PROGRAM_WEEKS: Week[] = [
@@ -157,58 +165,67 @@ export function makeProgramPlan(
   if (day === 1)
     exercises = [
       heavy("pullup", "Barra fixa com lastro", true),
-      accessory("row", "Remada apoiada", 3, 8),
+      {
+        ...heavy("deadlift", "Levantamento terra"),
+        sets: Math.min(2, w.sets),
+        note: "Depois do one-arm e da barra. Terra com volume controlado; reduza a carga se a fadiga das puxadas elevar o RPE.",
+      },
+      accessory("row", "Remada apoiada", 2, 8),
+      accessory("hamstring", "Mesa flexora", 2, 10),
       accessory("curl", "Rosca bíceps", 2, 10),
     ];
   if (day === 2)
     exercises = [
-      heavy("squat", "Back squat"),
       heavy("dip", "Dip com lastro", true),
-      accessory("leg-press", "Leg press", 2, 10, { repsMax: 15 }),
-      accessory("lateral", "Elevação lateral", 3, 12),
-      accessory("calf-standing", "Panturrilha em pé", 3, 10, { repsMax: 15 }),
+      heavy("bench", "Supino reto com barra"),
+      accessory("lateral", "Elevação lateral", 2, 12),
+      accessory("triceps-rope", "Tríceps na polia", 2, 10, { repsMax: 15 }),
     ];
   if (day === 3)
     exercises = [
-      heavy("bench", "Supino reto com barra"),
+      heavy("squat", "Back squat"),
+      accessory("row-single", "Remada serrote", 2, 8, { perSide: true }),
+      accessory("leg-press", "Leg press", 2, 10, { repsMax: 15 }),
+      accessory("extension", "Cadeira extensora", 2, 12),
+      accessory("calf-standing", "Panturrilha em pé", 2, 10, { repsMax: 15 }),
+    ];
+  if (day === 4)
+    exercises = [
       exercise("overhead-press", "Desenvolvimento militar", 2, 6, {
         repsMax: 8,
         priority: 1,
         progressive: true,
-        rpe: week <= 2 ? 6 : 7,
+        rpe: week <= 2 || reduced ? 6 : 7,
         rest: 150,
       }),
+      accessory("cable-fly", "Crucifixo na polia", 2, 12, { repsMax: 15 }),
+      accessory("lateral", "Elevação lateral", 2, 12),
       accessory("reverse", "Crucifixo invertido", 2, 12),
       accessory("triceps-rope", "Tríceps na polia", 2, 10, { repsMax: 15 }),
-    ];
-  if (day === 4)
-    exercises = [
-      heavy("deadlift", "Levantamento terra"),
-      accessory("hamstring", "Mesa flexora", 3, 10),
-      accessory("hip-thrust", "Elevação pélvica", 2, 8, { repsMax: 12 }),
-      accessory("calf-seated", "Panturrilha sentada", 3, 12, { repsMax: 20 }),
-      accessory("cable-crunch", "Abdominal na polia", 3, 10, { repsMax: 15 }),
     ];
   if (day === 5)
     exercises = [
       volume("pullup-volume", "Barra com lastro — volume", true),
-      accessory("row-single", "Remada serrote", 2, 10, { perSide: true }),
-      accessory("facepull", "Facepull", 2, 12),
-      accessory("curl-scott", "Rosca Scott", 2, 10, { repsMax: 15 }),
-    ];
-  if (day === 6)
-    exercises = [
       {
         ...volume("paused-squat", "Back squat pausado"),
         reps: week < 9 ? 4 : 3,
         repsMax: week < 9 ? 6 : 5,
       },
+      accessory("facepull", "Facepull", 2, 12),
+      accessory("hamstring", "Mesa flexora", 2, 10),
+      accessory("cable-crunch", "Abdominal na polia", 2, 10, { repsMax: 15 }),
+    ];
+  if (day === 6)
+    exercises = [
       {
         ...volume("dip-volume", "Dip — volume", true),
         repsMax: week < 5 ? 10 : week < 9 ? 8 : 6,
       },
-      accessory("extension", "Cadeira extensora", 2, 12),
       accessory("lateral", "Elevação lateral", 2, 12),
+      accessory("triceps-overhead", "Tríceps acima da cabeça na polia", 2, 10, {
+        repsMax: 15,
+      }),
+      accessory("chest-press", "Supino na máquina", 2, 10, { repsMax: 15 }),
     ];
   exercises = varyAccessories(exercises, week).map((e) => {
     if (e.priority <= 1)
@@ -230,32 +247,37 @@ export function makeProgramPlan(
       rpe: reduced || week <= 2 ? 6 : week < 7 ? 7 : 7.5,
     };
   });
-  const pr = week === 12 && day !== 5;
+  const pr = week === 12 && day <= 5;
   if (week === 12) {
-    const test = (
-      {
-        1: ["pullup", "Barra fixa com lastro", true],
-        2: ["squat", "Back squat", false],
-        3: ["bench", "Supino reto com barra", false],
-        4: ["deadlift", "Levantamento terra", false],
-        6: ["dip", "Dip com lastro", true],
-      } as const
-    )[day as 1 | 2 | 3 | 4 | 6];
-    exercises = test ? [heavy(test[0], test[1], test[2])] : [];
+    const tests = ["pullup", "dip", "squat", "bench", "deadlift"] as const;
+    const names = [
+      "Barra fixa com lastro",
+      "Dip com lastro",
+      "Back squat",
+      "Supino reto com barra",
+      "Levantamento terra",
+    ];
+    exercises =
+      day <= 5
+        ? [heavy(tests[day - 1], names[day - 1], [1, 2].includes(day))]
+        : [];
   }
   const plan: Plan = {
     program: PROGRAM_ID,
     week,
     day,
     name: `Treino ${"ABCDEF"[day - 1]}`,
-    focus: [
-      "One-arm + barra pesada",
-      "Back squat + dip pesado",
-      "One-arm técnico + supino",
-      "Terra + posteriores",
-      "One-arm + barra de volume",
-      "Back squat + dip de volume",
-    ][day - 1],
+    focus:
+      week === 12 && day === 6
+        ? "Descanso e recuperação"
+        : [
+            "One-arm + barra pesada + terra",
+            "Dip pesado + supino reto",
+            "One-arm técnico + back squat",
+            "Desenvolvimento + hipertrofia",
+            "One-arm + barra e squat de volume",
+            "Dip de volume + acessórios",
+          ][day - 1],
     pull: [1, 3, 5].includes(day),
     pr,
     exercises,

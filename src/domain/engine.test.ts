@@ -141,10 +141,10 @@ describe("sessões reais", () => {
       "2026-10-17",
     );
     expect(startSession(state(), makePlan(2, 1), MONDAY).id).toBe(
-      "2026-10-19:w2:d1:oapu-strength-12w-v2:r1",
+      "2026-10-19:w2:d1:oapu-strength-weekly-v3:r1",
     );
     expect(startSession(state(), makePlan(1, 2), MONDAY).id).toBe(
-      "2026-10-19:w1:d2:oapu-strength-12w-v2:r1",
+      "2026-10-19:w1:d2:oapu-strength-weekly-v3:r1",
     );
   });
   it("retoma a sessão ativa e permite refazer treino concluído", () => {
@@ -155,13 +155,13 @@ describe("sessões reais", () => {
     expect(startSession(s, makePlan(1, 1), MONDAY)).toEqual(first);
     // Pode abrir outro treino mesmo com um em andamento.
     expect(startSession(s, makePlan(1, 2), MONDAY + 86400000).id).toBe(
-      "2026-10-19:w1:d2:oapu-strength-12w-v2:r1",
+      "2026-10-19:w1:d2:oapu-strength-weekly-v3:r1",
     );
     // Refazer um treino concluído cria uma nova execução.
     const done = { ...first, finishedAt: first.startedAt + 1800000 };
     s.sessions = [done];
     expect(startSession(s, makePlan(1, 1), MONDAY + 172800000).id).toBe(
-      "2026-10-19:w1:d1:oapu-strength-12w-v2:r2",
+      "2026-10-19:w1:d1:oapu-strength-weekly-v3:r2",
     );
   });
   it("força pode ser registrada imediatamente sem aguardar OAPU", () => {
