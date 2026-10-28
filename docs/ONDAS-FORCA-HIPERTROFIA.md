@@ -64,3 +64,5 @@ Botão de reduzir dip para2 séries também reduz a lista de alvos; conversão d
 
 ## Validação pendente para OpenCode
 Testes NÃO executados, conforme usuário. Compilação para publicação registrada em PUBLICACAO.md. Atualizar asserts antigos de doses/IDs: programa agora waves-v4; datas/dias livres continuam. Verificar arrays de alvos, contagem e resumo de top/back-offs, carregamento ao trocar série, regressão de RM ausente, assistência, redução para2, calibração PR, edição de log existente, volume por grupo, frequência e separação F→A, snapshots v2/v3 e backups mistos. Não tratar os57 testes históricos como evidência desta versão. Não executar navegação sem autorização do usuário.
+
+Exceção explícita no taper: tríceps na corda mantém2 séries (já é dose reduzida devido às empurradas compostas); os demais acessórios caem a1 na S11. S12 retira todos os acessórios.

@@ -1,3 +1,7 @@
+## Ondas individualizadas publicadas — 27/10/2026
+
+Código a4f162cbe8be29809aa3ba03da1afd8984499e52. GitHub confirmou publicação com sucesso: https://github.com/CaioFabio893/treino-caio/actions/runs/40614864009 . Site https://caiofabio893.github.io/treino-caio/ . Compilação local e publicação concluídas; sem testes, lint, typecheck avulso, navegador ou verificações HTTP de conteúdo conforme instrução do usuário. OpenCode deve validar os casos em ONDAS-FORCA-HIPERTROFIA.md. Programa waves-v4, doses por movimento e por série, séries principais seguidas de reduções, acessórios progredindo2→3 e4 em prioridades específicas. Snapshots antigos preservados. Firebase continua desativado; nenhum acesso à Louise.
+
 ## Correção semanal e seleção publicada — 27/10/2026
 
 GitHub confirmou sucesso do pipeline https://github.com/CaioFabio893/treino-caio/actions/runs/40612498619 , código 3ad333d1662c19b942484b38726bf7801d31e832. Site: https://caiofabio893.github.io/treino-caio/ . Apenas instalação/compilação/publicação; nenhum teste, lint, typecheck avulso, check estático, HTTP de conteúdo ou navegador executado após a instrução do usuário de delegar testes ao OpenCode. Build inclui compilação TypeScript necessária à publicação. Testes existentes precisam ser adaptados às letras novas; não usar os57 resultados antigos como validação atual. Detalhes e casos pendentes: CORRECAO-SEMANA-E-SELECAO.md. Firebase continua desativado; Louise não foi acessada.
