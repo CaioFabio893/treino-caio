@@ -41,6 +41,13 @@ export interface Exercise {
   referenceBodyweight?: number;
   assistance?: number;
   attempts?: { percent: number; load: number; assistance: number }[];
+  setTargets?: {
+    reps: number;
+    percent: number;
+    rpe: number;
+    load: number | null;
+    assistance: number;
+  }[];
 }
 export interface Plan {
   program?: string;

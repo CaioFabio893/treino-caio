@@ -1,3 +1,5 @@
+> VIGENTE — 27/10/2026: programação waves-v4 com ondas próprias por movimento, top/back-offs e progressão de hipertrofia implementadas. Leia docs/ONDAS-FORCA-HIPERTROFIA.md. Preserva a semana A–F e seleção corrigida. Sem testes nesta rodada; OpenCode validará. Tabelas antigas abaixo são históricas.
+
 > VIGENTE — 27/10/2026: divisão semanal v3 A–F, seleção corrigida e frequências por sete dias. Leia docs/CORRECAO-SEMANA-E-SELECAO.md. NÃO executar testes nesta rodada; OpenCode fará a validação. Resultados e divisão antigos abaixo são históricos.
 
 > Pedido vigente: começar leve em todos os exercícios. Entrada a 60% nos principais (squat 120 kg na referência histórica 200), RPE 6; aumentos limitados por execução real, sem salto de calendário ou 100% automático em S12. Leia docs/RETORNO-LEVE.md (RETORNO-LEVE.md nesta pasta). As tabelas/cargas anteriores abaixo são históricas quando divergirem.

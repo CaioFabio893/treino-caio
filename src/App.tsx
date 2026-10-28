@@ -1,3 +1,4 @@
+import { waveSummary } from "./domain/waves";
 import { loadDescription, planLoads } from "./domain/loads";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import {
@@ -760,7 +761,7 @@ export default function App() {
                       <strong>
                         {wk.week === 12
                           ? "Até 3 tentativas"
-                          : `${wk.sets} × ${wk.reps}`}
+                          : waveSummary(makePlan(wk.week, 3).exercises[0])}
                       </strong>
                       <span>
                         {wk.percent}% RM · RPE ≤ {wk.rpe}
@@ -769,7 +770,7 @@ export default function App() {
                     <small>
                       {wk.week === 12
                         ? "Testes com prontidão · sem 105% automático"
-                        : "6 treinos · 7 dias · domingo descanso"}
+                        : "Referência do squat; cada movimento tem dose própria"}
                     </small>
                     <ArrowRight size={18} />
                   </button>
@@ -1066,8 +1067,7 @@ function PlanPreview({
               <p>{e.note || "Confirme a carga pelo esforço e pela técnica."}</p>
             </div>
             <strong>
-              {e.sets}×{e.reps}
-              {e.repsMax ? `–${e.repsMax}` : ""}
+              {waveSummary(e)}
               <small>
                 {e.unit === "seconds"
                   ? "segundos"
@@ -1214,7 +1214,7 @@ function Workout({
       <div className="complete-workout">
         {session.plan.exercises.map((e) => (
           <ExerciseCard
-            key={`${e.id}:${e.rm}:${e.percent}:${e.load}:${e.assistance}`}
+            key={`${e.id}:${e.rm}:${e.percent}:${e.load}:${e.assistance}:${e.sets}:${JSON.stringify(e.setTargets)}`}
             exercise={e}
             session={session}
             state={state}
@@ -1373,41 +1373,50 @@ function ExerciseCard({
 }) {
   const done = session.sets.filter((s) => s.exerciseId === e.id);
   const planned = (i: number) =>
+    e.setTargets?.[i] ??
     e.attempts?.[i] ?? { load: e.load, assistance: e.assistance ?? 0 };
-  const [index, setIndex] = useState(() => Math.min(done.length, e.sets - 1));
+  const initialIndex = Math.min(done.length, e.sets - 1);
+  const initialLog = done.find((log) => log.index === initialIndex);
+  const [index, setIndex] = useState(initialIndex);
   const [load, setLoad] = useState(() => {
-    const value = planned(Math.min(done.length, e.sets - 1)).load;
+    const value = initialLog?.load ?? planned(initialIndex).load;
     return value === null ? "" : String(value);
   });
   const [assistance, setAssistance] = useState(
-    String(planned(Math.min(done.length, e.sets - 1)).assistance),
+    String(initialLog?.assistance ?? planned(initialIndex).assistance),
   );
-  const [amount, setAmount] = useState("");
-  const [rpe, setRpe] = useState("");
-  const [ready, setReady] = useState(false);
-  const [successful, setSuccessful] = useState(true);
+  const [amount, setAmount] = useState(
+    initialLog ? String(initialLog.amount) : "",
+  );
+  const [rpe, setRpe] = useState(initialLog ? String(initialLog.rpe) : "");
+  const [ready, setReady] = useState(initialLog?.ready ?? false);
+  const [successful, setSuccessful] = useState(initialLog?.successful ?? true);
   const existing = done.find((s) => s.index === index);
   const recovery = state.readiness.find((r) => r.date === dateKey());
-  const progression = session.plan.pr
-    ? null
-    : accessoryProgression(
-        e,
-        state.sessions,
-        session.id,
-        state.profile.increment,
-        recovery,
-      );
+  const progression =
+    session.plan.pr || !!e.setTargets?.length
+      ? null
+      : accessoryProgression(
+          e,
+          state.sessions,
+          session.id,
+          state.profile.increment,
+          recovery,
+        );
   const variants = alternatives(e);
   const last = done.at(-1);
+  const lastTargetRpe = last
+    ? (e.setTargets?.[last.index]?.rpe ?? e.rpe)
+    : e.rpe;
   const advice =
     last &&
     !session.plan.pr &&
-    last.rpe >= e.rpe + 1 &&
+    last.rpe >= lastTargetRpe + 1 &&
     (last.assistance ?? 0) === 0
       ? suggestion(
           last.load,
           last.rpe,
-          e.rpe,
+          lastTargetRpe,
           state.profile.increment,
           recovery?.pain,
         )
@@ -1483,9 +1492,9 @@ function ExerciseCard({
         });
         if (!existing) {
           setIndex(Math.min(index + 1, e.sets - 1));
-          if (e.attempts) {
+          if (e.attempts || e.setTargets) {
             const next = planned(Math.min(index + 1, e.sets - 1));
-            setLoad(String(next.load));
+            setLoad(next.load === null ? "" : String(next.load));
             setAssistance(String(next.assistance));
           }
           setAmount("");
@@ -1514,10 +1523,7 @@ function ExerciseCard({
                 ? "segundos"
                 : "metros"}
           </span>
-          <strong>
-            {e.sets} × {e.reps}
-            {e.repsMax ? `–${e.repsMax}` : ""}
-          </strong>
+          <strong>{waveSummary(e)}</strong>
         </div>
         <div>
           <span>{e.weighted ? "Lastro prescrito" : "Carga prescrita"}</span>
@@ -1647,6 +1653,18 @@ function ExerciseCard({
           {session.plan.pr ? "Tentativa" : "Série"} {index + 1}
           {existing ? " · editar registro" : ""}
         </h3>
+        {e.setTargets?.[index] && (
+          <p className="subtle">
+            Prescrição desta série: {e.setTargets[index].reps} reps · alvo{" "}
+            {e.setTargets[index].percent}% · RPE ≤ {e.setTargets[index].rpe} ·{" "}
+            {e.setTargets[index].load === null
+              ? "carga a definir"
+              : e.setTargets[index].assistance > 0
+                ? `assistência ${e.setTargets[index].assistance} kg`
+                : `${e.weighted ? "+" : ""}${e.setTargets[index].load} kg`}
+            . Os campos de reps e RPE real são preenchidos após executar.
+          </p>
+        )}
         <div className="set-inputs">
           <Stepper
             label={e.weighted ? "Lastro kg" : "Carga kg"}

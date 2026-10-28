@@ -117,6 +117,21 @@ export function decode(raw: string): AppState {
         ) ||
         !(e.assistance === undefined || number(e.assistance, 0, 400)) ||
         !(
+          e.setTargets === undefined ||
+          (Array.isArray(e.setTargets) &&
+            e.setTargets.length === e.sets &&
+            e.setTargets.every(
+              (target) =>
+                record(target) &&
+                number(target.reps, 1, 100) &&
+                Number.isInteger(target.reps) &&
+                number(target.percent, 0.1, 100) &&
+                number(target.rpe, 1, 10) &&
+                (target.load === null || number(target.load)) &&
+                number(target.assistance, 0, 400),
+            ))
+        ) ||
+        !(
           e.attempts === undefined ||
           (Array.isArray(e.attempts) &&
             e.attempts.length === 3 &&

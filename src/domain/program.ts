@@ -1,8 +1,9 @@
 import type { Exercise, Plan, Profile, Session, Week } from "./model";
 import { HEAVY_PERCENT, planLoads } from "./loads";
+import { applyWave, hypertrophySets } from "./waves";
 import { varyAccessories } from "./accessories";
 
-export const PROGRAM_ID = "oapu-strength-weekly-v3";
+export const PROGRAM_ID = "oapu-strength-waves-v4";
 export const TRAINING_DAYS = [1, 2, 3, 4, 5, 6];
 export const WEEKDAY_LABELS = [
   "Segunda",
@@ -18,16 +19,16 @@ export const ROTATION =
 // Prescrição dos movimentos pesados; os dias de volume e técnica têm dose própria.
 export const PROGRAM_WEEKS: Week[] = [
   [3, 6, 6, "Base e calibração"],
-  [3, 6, 6.5, "Acumular volume"],
-  [3, 6, 7, "Consolidar a base"],
+  [4, 6, 7, "Acumular volume"],
+  [5, 5, 7, "Consolidar a base"],
   [2, 5, 6, "Deload"],
-  [3, 5, 7, "Intensificar"],
-  [3, 4, 7.5, "Força progressiva"],
-  [3, 3, 8, "Triplas controladas"],
+  [4, 5, 7.5, "Intensificar"],
+  [5, 4, 8, "Força progressiva"],
+  [4, 3, 8, "Série principal + redução"],
   [2, 3, 6, "Deload"],
-  [3, 3, 8, "Especificidade"],
-  [2, 2, 8, "Duplas submáximas"],
-  [2, 2, 6, "Taper"],
+  [4, 3, 8, "Dupla principal + volume"],
+  [4, 2, 8.5, "Single + duplas"],
+  [3, 2, 8, "Taper com single controlado"],
   [3, 1, 8.5, "PR com prontidão"],
 ].map((row, i) => ({
   week: i + 1,
@@ -72,7 +73,15 @@ export function oapuProtocol(week: number, day: number) {
   const reduced = [4, 8, 11, 12].includes(week);
   const block = Math.floor((week - 1) / 4);
   const technical = day === 3;
-  const sets = reduced ? 2 : day === 5 ? 2 : 3;
+  const forceSets = [3, 3, 4, 2, 4, 4, 3, 2, 3, 2, 2, 2];
+  const volumeSets = [2, 3, 3, 2, 3, 3, 3, 2, 2, 2, 2, 2];
+  const sets = technical
+    ? reduced
+      ? 2
+      : 3
+    : day === 5
+      ? volumeSets[week - 1]
+      : forceSets[week - 1];
   const reps = technical
     ? 2
     : day === 5
@@ -173,6 +182,7 @@ export function makeProgramPlan(
       accessory("row", "Remada apoiada", 2, 8),
       accessory("hamstring", "Mesa flexora", 2, 10),
       accessory("curl", "Rosca bíceps", 2, 10),
+      accessory("calf-seated", "Panturrilha sentada", 2, 12, { repsMax: 20 }),
     ];
   if (day === 2)
     exercises = [
@@ -228,23 +238,12 @@ export function makeProgramPlan(
       accessory("chest-press", "Supino na máquina", 2, 10, { repsMax: 15 }),
     ];
   exercises = varyAccessories(exercises, week).map((e) => {
-    if (e.priority <= 1)
-      return reduced && !e.lift
-        ? { ...e, sets: Math.min(e.sets, 2), rpe: Math.min(e.rpe, w.rpe) }
-        : e;
-    // Acessórios crescem na base; menor volume conforme o pico se aproxima.
-    const cap =
-      week === 11
-        ? 1
-        : [4, 8, 9, 10, 12].includes(week)
-          ? 2
-          : week === 1
-            ? 2
-            : 3;
+    const waved = applyWave(e, week);
+    if (waved.setTargets) return waved;
     return {
       ...e,
-      sets: Math.min(e.sets, cap),
-      rpe: reduced || week <= 2 ? 6 : week < 7 ? 7 : 7.5,
+      sets: Math.max(1, hypertrophySets(e, week, day)),
+      rpe: [4, 8, 11, 12].includes(week) || week <= 2 ? 6 : week < 5 ? 7 : 7.5,
     };
   });
   const pr = week === 12 && day <= 5;
@@ -259,7 +258,12 @@ export function makeProgramPlan(
     ];
     exercises =
       day <= 5
-        ? [heavy(tests[day - 1], names[day - 1], [1, 2].includes(day))]
+        ? [
+            applyWave(
+              heavy(tests[day - 1], names[day - 1], [1, 2].includes(day)),
+              week,
+            ),
+          ]
         : [];
   }
   const plan: Plan = {

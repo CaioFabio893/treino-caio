@@ -138,7 +138,9 @@ export function reducePushVolume(session: Session): Session {
     plan: {
       ...session.plan,
       exercises: session.plan.exercises.map((x) =>
-        x.id === e.id ? { ...x, sets: 2 } : x,
+        x.id === e.id
+          ? { ...x, sets: 2, setTargets: x.setTargets?.slice(0, 2) }
+          : x,
       ),
     },
     decisions: [
