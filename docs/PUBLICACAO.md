@@ -1,3 +1,7 @@
+## Correção semanal e seleção publicada — 27/10/2026
+
+GitHub confirmou sucesso do pipeline https://github.com/CaioFabio893/treino-caio/actions/runs/40612498619 , código 3ad333d1662c19b942484b38726bf7801d31e832. Site: https://caiofabio893.github.io/treino-caio/ . Apenas instalação/compilação/publicação; nenhum teste, lint, typecheck avulso, check estático, HTTP de conteúdo ou navegador executado após a instrução do usuário de delegar testes ao OpenCode. Build inclui compilação TypeScript necessária à publicação. Testes existentes precisam ser adaptados às letras novas; não usar os57 resultados antigos como validação atual. Detalhes e casos pendentes: CORRECAO-SEMANA-E-SELECAO.md. Firebase continua desativado; Louise não foi acessada.
+
 ## Retorno leve publicado — 25/10/2026
 
 Código c51d88fcf4e9fad484b164caae43b426fc40eb9e, pipeline https://github.com/CaioFabio893/treino-caio/actions/runs/40233575458 concluído com sucesso. Site e JS HTTP200, marcadores de limite por histórico e calibração assistida presentes. 57 testes unitários passaram; types/lint/build/check estático aprovados pelo pipeline. Sem testes de navegação/E2E. Ver RETORNO-LEVE.md. Início de squat120kg/RPE6 na referência200kg; demais entradas reduzidas, sem salto por calendário. Firebase desativado, Louise intocada.
