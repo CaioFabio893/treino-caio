@@ -10,15 +10,11 @@ import { loadDescription, percentLoad, planLoads } from "./loads";
 import { substitute } from "./accessories";
 
 describe("prescrição por %RM e RPE", () => {
-  it("troca teste de PR por calibração quando a entrada requer assistência", () => {
+  it("teste de PR da barra usa só a carga do lastro, sem somar o peso corporal", () => {
     const state = initialState();
     const plan = makePlan(12, 1, state.profile, []);
-    expect(plan.pr).toBe(false);
-    expect(plan.exercises[0]).toMatchObject({
-      load: 0,
-      assistance: 17.5,
-      rpe: 6,
-    });
+    expect(plan.pr).toBe(true);
+    expect(plan.exercises[0]).toMatchObject({ load: 22.5, assistance: 0 });
     const s = startSession(state, plan, 1000);
     expect(() =>
       addSet(
@@ -26,10 +22,9 @@ describe("prescrição por %RM e RPE", () => {
         plan.exercises[0],
         {
           index: 0,
-          load: 0,
-          assistance: 17.5,
-          amount: 3,
-          rpe: 6,
+          load: 22.5,
+          amount: 1,
+          rpe: 7,
           successful: true,
           ready: false,
         },
@@ -46,7 +41,7 @@ describe("prescrição por %RM e RPE", () => {
     expect(makePlan(1, 2, state.profile, []).exercises[0]).toMatchObject({
       load: 120,
       rpe: 6,
-      sets: 3,
+      sets: 4,
       reps: 6,
     });
   });
@@ -54,7 +49,7 @@ describe("prescrição por %RM e RPE", () => {
     const state = initialState();
     let session = startSession(state, makePlan(1, 2, state.profile, []), 1000);
     const e = session.plan.exercises[0];
-    for (let index = 0; index < 3; index++)
+    for (let index = 0; index < e.sets; index++)
       session = addSet(
         session,
         e,
@@ -64,7 +59,7 @@ describe("prescrição por %RM e RPE", () => {
     state.sessions = [{ ...session, finishedAt: 3000 }];
     expect(
       makePlan(10, 2, state.profile, state.sessions).exercises[0],
-    ).toMatchObject({ load: 122.5, percent: 61.25, scheduledPercent: 77.5 });
+    ).toMatchObject({ load: 122.5, percent: 61.25, scheduledPercent: 85 });
   });
   it("não aumenta com séries parciais, falha ou RPE alto", () => {
     const state = initialState();
@@ -98,12 +93,11 @@ describe("prescrição por %RM e RPE", () => {
   });
   it("outros principais começam mais leves e acessórios não recebem saltos de calendário", () => {
     const state = initialState();
-    expect(makePlan(1, 3, state.profile, []).exercises[0].load).toBe(100);
-    expect(makePlan(1, 4, state.profile, []).exercises[0].load).toBe(130);
-    expect(makePlan(1, 2, state.profile, []).exercises[1].load).toBe(25);
+    expect(makePlan(1, 3, state.profile, []).exercises[0].load).toBe(65);
+    expect(makePlan(1, 4, state.profile, []).exercises[0].load).toBe(120);
     state.profile.referenceRm = { row: 100, "overhead-press": 100 };
     expect(makePlan(1, 3, state.profile, []).exercises[1].load).toBe(55);
-    expect(makePlan(4, 3, state.profile, []).exercises[1].load).toBe(45);
+    expect(makePlan(7, 3, state.profile, []).exercises[1].load).toBe(52.5);
     expect(
       makePlan(10, 1, state.profile, []).exercises[1].load,
     ).toBeLessThanOrEqual(55);
@@ -119,46 +113,51 @@ describe("prescrição por %RM e RPE", () => {
       rmSource: "current",
     });
     expect(makePlan(4, 2, profile).exercises[0]).toMatchObject({
-      percent: 50,
-      load: 100,
-      rpe: 6,
+      percent: 67.5,
+      load: 135,
+      rpe: 7,
     });
-    expect(makePlan(10, 2, profile).exercises[0]).toMatchObject({
+    expect(makePlan(8, 2, profile).exercises[0]).toMatchObject({
       percent: 77.5,
       load: 155,
       rpe: 8,
     });
+    const peak = makePlan(10, 2, profile).exercises[0];
+    expect(peak).toMatchObject({ percent: 85, load: 170, rpe: 9 });
+    expect(peak.setTargets?.map((t) => t.load)).toEqual([
+      170, 155, 155, 155,
+    ]);
   });
   it("marca o histórico como provisório e prioriza RM atual sem mudar o histórico", () => {
     const profile = initialState().profile;
     expect(makePlan(1, 3, profile).exercises[0]).toMatchObject({
-      load: 100,
+      load: 65,
       rmSource: "historical",
     });
-    profile.referenceRm = { bench: 120 };
+    profile.referenceRm = { dip: 150 };
     expect(makePlan(1, 3, profile).exercises[0]).toMatchObject({
-      load: 70,
+      load: 90,
       rmSource: "current",
     });
-    expect(profile.historical.bench).toBe(170);
+    expect(profile.historical.dip).toBe(110);
   });
-  it("usa PC + RM do lastro, não percentual só do lastro", () => {
+  it("calcula o percentual só sobre o RM de lastro", () => {
     expect(percentLoad(40, 75, 2.5, 100)).toEqual({ load: 5, assistance: 0 });
     const p = initialState().profile;
     expect(makePlan(1, 1, p).exercises[0]).toMatchObject({
-      load: 0,
-      assistance: 17.5,
-      referenceBodyweight: 100,
+      load: 22.5,
+      assistance: 0,
+      referenceBodyweight: 0,
       rm: 40,
     });
   });
-  it("indica assistência quando a meta fica abaixo do PC, sem lastro negativo", () => {
+  it("a função genérica ainda indica assistência abaixo do PC; o plano não usa o PC", () => {
     expect(percentLoad(40, 60, 2.5, 100)).toEqual({
       load: 0,
       assistance: 17.5,
     });
     const e = makePlan(4, 1, initialState().profile).exercises[0];
-    expect(loadDescription(e)).toContain("Assistência 30");
+    expect(loadDescription(e)).toContain("+25 kg");
   });
   it("arredonda a carga para baixo e a assistência para cima", () => {
     expect(percentLoad(173, 75, 2.5).load).toBe(127.5);
@@ -194,18 +193,19 @@ describe("prescrição por %RM e RPE", () => {
   it("usa RM do squat no pausado com % menor, permitindo RM específico", () => {
     const p = initialState().profile;
     p.referenceRm = { squat: 200 };
-    expect(makePlan(1, 6, p).exercises[0]).toMatchObject({
+    expect(makePlan(1, 6, p).exercises[1]).toMatchObject({
+      id: "paused-squat",
       rm: 200,
-      percent: 50,
-      load: 100,
+      percent: 52.5,
+      load: 105,
     });
     p.referenceRm["paused-squat"] = 150;
-    expect(makePlan(1, 6, p).exercises[0].load).toBe(75);
+    expect(makePlan(1, 6, p).exercises[1].load).toBe(77.5);
   });
   it("não escala automaticamente para 100% do RM antigo na janela de PR", () => {
     const p = initialState().profile;
-    p.referenceRm = { bench: 100 };
-    const e = makePlan(12, 3, p, []).exercises[0];
+    p.referenceRm = { deadlift: 100 };
+    const e = makePlan(12, 4, p, []).exercises[0];
     expect(e.attempts).toBeUndefined();
     expect(e.load).toBe(60);
   });
@@ -230,10 +230,10 @@ describe("prescrição por %RM e RPE", () => {
   });
   it("preserva a prescrição da sessão após editar o perfil", () => {
     const state = initialState();
-    state.profile.referenceRm = { bench: 100 };
+    state.profile.referenceRm = { dip: 150 };
     const session = startSession(state, makePlan(1, 3, state.profile), 1000);
-    state.profile.referenceRm.bench = 200;
-    expect(session.plan.exercises[0].load).toBe(60);
-    expect(makePlan(1, 3, state.profile).exercises[0].load).toBe(120);
+    state.profile.referenceRm.dip = 250;
+    expect(session.plan.exercises[0].load).toBe(90);
+    expect(makePlan(1, 3, state.profile).exercises[0].load).toBe(150);
   });
 });

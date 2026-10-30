@@ -69,46 +69,53 @@ describe("ciclo de 12 semanas", () => {
     expect(() => makePlan(1, 0)).toThrow();
     expect(() => makePlan(1, 7)).toThrow();
   });
-  it("supino é progressivo e cargas iniciais não copiam máximos históricos", () => {
+  it("dip é progressivo e cargas iniciais não copiam máximos históricos", () => {
     expect(makePlan(1, 1).exercises[0]).toMatchObject({
       id: "pullup",
-      sets: 3,
+      sets: 4,
       reps: 6,
       load: null,
       rpe: 6,
     });
     expect(makePlan(1, 3).exercises[0]).toMatchObject({
-      id: "bench",
+      id: "dip",
       progressive: true,
       load: null,
     });
   });
   it("deloads e taper reduzem dose e esforço", () => {
-    expect(makePlan(4, 1).exercises[0]).toMatchObject({
-      sets: 2,
+    expect(makePlan(7, 1).exercises[0]).toMatchObject({
+      sets: 3,
       reps: 5,
       rpe: 6,
     });
-    expect(makePlan(8, 4).exercises[0]).toMatchObject({
+    expect(makePlan(7, 4).exercises[0]).toMatchObject({
+      id: "deadlift",
       sets: 2,
-      reps: 3,
+      reps: 4,
       rpe: 6,
     });
     expect(makePlan(11, 2).exercises[0]).toMatchObject({
-      sets: 2,
-      reps: 2,
+      sets: 3,
+      reps: 3,
       rpe: 6,
     });
     expect(
       makePlan(7, 6).exercises.find((e) => e.id === "dip-volume")?.rpe,
-    ).toBeLessThanOrEqual(7.5);
+    ).toBeLessThanOrEqual(5);
   });
-  it("S12 separa cinco testes e preserva um treino unilateral leve", () => {
-    expect([1, 2, 3, 4, 6].map((d) => makePlan(12, d).exercises[0].id)).toEqual(
-      ["pullup", "squat", "bench", "deadlift", "dip"],
-    );
-    expect(makePlan(12, 5).exercises).toHaveLength(0);
-    expect(makePlan(12, 5).pr).toBe(false);
+  it("S12 separa quatro testes, teste de one-arm na sexta e descanso no sábado", () => {
+    expect([1, 2, 3, 4].map((d) => makePlan(12, d).exercises[0].id)).toEqual([
+      "pullup",
+      "squat",
+      "dip",
+      "deadlift",
+    ]);
+    expect(makePlan(12, 1).exercises[0].setTargets).toHaveLength(3);
+    for (const d of [5, 6]) {
+      expect(makePlan(12, d).exercises).toHaveLength(0);
+      expect(makePlan(12, d).pr).toBe(false);
+    }
   });
   it("calendário considera segunda e dias civis, não diferença de horário/DST", () => {
     expect(monday(new Date("2026-10-18T12:00:00"))).toBe("2026-10-12");
@@ -141,10 +148,10 @@ describe("sessões reais", () => {
       "2026-10-17",
     );
     expect(startSession(state(), makePlan(2, 1), MONDAY).id).toBe(
-      "2026-10-19:w2:d1:oapu-strength-weekly-v3:r1",
+      "2026-10-19:w2:d1:oapu-strength-waves-v5:r1",
     );
     expect(startSession(state(), makePlan(1, 2), MONDAY).id).toBe(
-      "2026-10-19:w1:d2:oapu-strength-weekly-v3:r1",
+      "2026-10-19:w1:d2:oapu-strength-waves-v5:r1",
     );
   });
   it("retoma a sessão ativa e permite refazer treino concluído", () => {
@@ -155,13 +162,13 @@ describe("sessões reais", () => {
     expect(startSession(s, makePlan(1, 1), MONDAY)).toEqual(first);
     // Pode abrir outro treino mesmo com um em andamento.
     expect(startSession(s, makePlan(1, 2), MONDAY + 86400000).id).toBe(
-      "2026-10-19:w1:d2:oapu-strength-weekly-v3:r1",
+      "2026-10-19:w1:d2:oapu-strength-waves-v5:r1",
     );
     // Refazer um treino concluído cria uma nova execução.
     const done = { ...first, finishedAt: first.startedAt + 1800000 };
     s.sessions = [done];
     expect(startSession(s, makePlan(1, 1), MONDAY + 172800000).id).toBe(
-      "2026-10-19:w1:d1:oapu-strength-weekly-v3:r2",
+      "2026-10-19:w1:d1:oapu-strength-waves-v5:r2",
     );
   });
   it("força pode ser registrada imediatamente sem aguardar OAPU", () => {

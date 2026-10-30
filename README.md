@@ -1,3 +1,5 @@
+> VIGENTE — 30/10/2026: programação waves-v5 (retorno, one-arm 3×, dip 2×, squat 2×, terra em dia próprio, strongman de academia, % e RPE de 12 semanas). Leia docs/PERIODIZACAO-V5.md. Prevalece sobre os avisos abaixo quando divergirem.
+
 > VIGENTE — 27/10/2026: programação waves-v4 com ondas próprias por movimento, top/back-offs e progressão de hipertrofia implementadas. Leia docs/ONDAS-FORCA-HIPERTROFIA.md. Preserva a semana A–F e seleção corrigida. Sem testes nesta rodada; OpenCode validará. Tabelas antigas abaixo são históricas.
 
 > VIGENTE — 27/10/2026: divisão semanal v3 A–F, seleção corrigida e frequências por sete dias. Leia docs/CORRECAO-SEMANA-E-SELECAO.md. NÃO executar testes nesta rodada; OpenCode fará a validação. Resultados e divisão antigos abaixo são históricos.

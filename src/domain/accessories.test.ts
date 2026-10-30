@@ -49,11 +49,11 @@ describe("acessórios por bloco e progressão optativa", () => {
     );
     expect(makePlan(5, 1).exercises[1].id).toBe("row-cable");
     expect(makePlan(5, 1).exercises[0].id).toBe("pullup");
-    expect(makePlan(5, 1).exercises[0].sets).toBe(3);
+    expect(makePlan(5, 1).exercises[0].sets).toBe(4);
   });
   it("reduz acessórios no deload, peaking, taper e os retira dos testes PR", () => {
-    expect(makePlan(4, 1).exercises[1]).toMatchObject({ sets: 2, rpe: 6 });
-    expect(makePlan(9, 1).exercises[1].sets).toBe(2);
+    expect(makePlan(7, 1).exercises[1]).toMatchObject({ sets: 2, rpe: 6 });
+    expect(makePlan(9, 1).exercises[1].sets).toBe(3);
     expect(makePlan(11, 1).exercises[1].sets).toBe(1);
     expect(makePlan(12, 1).exercises.map((e) => e.id)).toEqual(["pullup"]);
   });

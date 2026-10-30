@@ -1,9 +1,12 @@
 import type { Exercise, Plan, Profile, Session } from "./model";
+import { REDUCED_WEEKS } from "./waves";
 
 export const HEAVY_PERCENT = [
-  60, 62.5, 67.5, 50, 70, 72.5, 80, 55, 82.5, 85, 82.5, 80,
+  60, 62.5, 65, 67.5, 70, 72.5, 60, 77.5, 80, 85, 65, 85,
 ];
-const VOLUME_PERCENT = [55, 57.5, 60, 45, 60, 62.5, 65, 50, 65, 67.5, 50, 55];
+const VOLUME_PERCENT = [
+  52.5, 55, 57.5, 60, 62.5, 65, 50, 67.5, 70, 72.5, 55, 50,
+];
 const PARENTS: Record<string, string> = {
   "pullup-volume": "pullup",
   "dip-volume": "dip",
@@ -19,7 +22,8 @@ export function gradualLoad(
   rm: number,
   scheduled: { load: number; assistance: number },
 ) {
-  const bw = e.weighted ? profile.bodyweight : 0;
+  // Percentuais incidem só sobre a carga (RM de lastro), nunca sobre o peso corporal.
+  const bw = 0;
   const baseline = percentLoad(
     rm,
     percentageFor({ ...e, setTargets: undefined }, 1),
@@ -68,7 +72,7 @@ export function gradualLoad(
           (x.load === logs[0].load &&
             (x.assistance ?? 0) === (logs[0].assistance ?? 0))),
     );
-  const changedBw = e.weighted && prior.bodyweight !== profile.bodyweight;
+  const changedBw = false;
   const step =
     complete && !changedBw && profile.increment <= 2.5 ? profile.increment : 0;
   let ceiling = changedBw
@@ -145,13 +149,16 @@ export function percentLoad(
 export function percentageFor(e: Exercise, week: number) {
   if (e.setTargets?.length) return e.setTargets[0].percent;
   if (MAIN.includes(e.id)) return HEAVY_PERCENT[week - 1];
-  if (e.id === "paused-squat") return VOLUME_PERCENT[week - 1] - 5;
-  if (e.id === "pullup-volume" || e.id === "dip-volume")
+  if (
+    e.id === "paused-squat" ||
+    e.id === "pullup-volume" ||
+    e.id === "dip-volume"
+  )
     return VOLUME_PERCENT[week - 1];
   if (e.id === "overhead-press")
-    return [4, 8, 11, 12].includes(week) ? 45 : week < 5 ? 55 : 60;
+    return REDUCED_WEEKS.includes(week) ? 45 : week < 5 ? 55 : 60;
   // Acessórios: faixa mais alta de reps usa referência mais leve, sempre subordinada ao RPE.
-  return [4, 8, 11, 12].includes(week)
+  return REDUCED_WEEKS.includes(week)
     ? 40
     : (e.repsMax ?? e.reps) >= 15
       ? 50
@@ -185,7 +192,7 @@ export function planLoads(
           })),
           note: `Informe o RM deste exercício no perfil para calcular kg; até lá, escolha a carga pelo RPE.${e.perSide ? " Quantidade por lado; carga por mão para halteres." : ""}`,
         };
-      const bw = e.weighted ? profile.bodyweight : 0;
+      const bw = 0;
       let calculated = percentLoad(ref.rm, percent, profile.increment, bw);
       let capNote = "";
       if (sessions !== undefined) {
@@ -231,7 +238,7 @@ export function planLoads(
         ...calculated,
         setTargets,
         attempts,
-        note: `${ref.source === "historical" ? "RM histórico provisório: confirme seu RM atual no perfil." : "RM atual informado no perfil."} Percentual é ponto de partida; reduza a carga se exceder RPE ${e.rpe}. Comece confortável; não force a carga para cumprir o calendário. ${capNote} Arredondamento conservador ao incremento configurado.${bw ? " Percentual sobre peso corporal + RM de lastro; kg prescritos são lastro ou assistência." : ""}${e.perSide ? " Repetições por lado; carga por mão para halteres." : ""}${e.id === "paused-squat" && !profile.referenceRm?.[e.id] ? " Referência do back squat livre com percentual menor para a pausa." : ""}${plan.pr ? " Janela opcional de teste: sem escalada automática para 100% do RM antigo. Escolha cada tentativa pelo desempenho recente e prontidão; pode repetir uma carga confortável em vez de testar PR." : ""}`,
+        note: `${ref.source === "historical" ? "RM histórico provisório: confirme seu RM atual no perfil." : "RM atual informado no perfil."} Percentual é ponto de partida; reduza a carga se exceder RPE ${e.rpe}. Comece confortável; não force a carga para cumprir o calendário. ${capNote} Arredondamento conservador ao incremento configurado.${e.weighted ? " Percentual só sobre a carga (RM de lastro), sem somar o peso corporal." : ""}${e.perSide ? " Repetições por lado; carga por mão para halteres." : ""}${e.id === "paused-squat" && !profile.referenceRm?.[e.id] ? " Referência do back squat livre com percentual menor para a pausa." : ""}${plan.pr ? " Janela opcional de teste: sem escalada automática para 100% do RM antigo. Escolha cada tentativa pelo desempenho recente e prontidão; pode repetir uma carga confortável em vez de testar PR." : ""}`,
       };
     }),
   };

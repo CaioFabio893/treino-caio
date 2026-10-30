@@ -587,8 +587,9 @@ export default function App() {
                   })}
                 </div>
                 <p className="subtle">
-                  Distribuição sugerida em sete dias: one-arm 3×, dip 2× e back
-                  squat 2× por semana. Domingo é descanso. As letras continuam
+                  Distribuição sugerida em sete dias: one-arm 3× (A/C/E), dip 2×
+                  (C/F), agachamento 2× (B/F) e terra sozinho em D. Domingo é
+                  descanso. As letras continuam
                   livres, sem bloqueio por data. Na semana de testes, priorize
                   recuperação e não force todos os PRs.
                 </p>
@@ -731,7 +732,7 @@ export default function App() {
                 text="Construa volume, desenvolva força, chegue pronto. Os treinos de volume mantêm seus próprios limites de esforço."
               />
               <div className="phase-legend">
-                {["Acumulação", "Intensificação", "Peaking", "PR Test"].map(
+                {["Reentrada", "Acumulação", "Intensificação", "Pico", "Teste PR"].map(
                   (p, i) => (
                     <Tag key={p} muted={i !== 0}>
                       {String(i + 1).padStart(2, "0")} / {p}
@@ -761,7 +762,7 @@ export default function App() {
                       <strong>
                         {wk.week === 12
                           ? "Até 3 tentativas"
-                          : waveSummary(makePlan(wk.week, 3).exercises[0])}
+                          : waveSummary(makePlan(wk.week, 2).exercises[0])}
                       </strong>
                       <span>
                         {wk.percent}% RM · RPE ≤ {wk.rpe}
@@ -987,14 +988,12 @@ function LoadBasis({ exercise: e }: { exercise: Exercise }) {
   return (
     <small className="subtle">
       {e.percent !== undefined
-        ? `${e.percent}% do RM${e.weighted ? " total (PC + lastro)" : ""}`
+        ? `${e.percent}% do RM${e.weighted ? " (só lastro)" : ""}`
         : "Carga por RPE"}
       {e.rm !== undefined
         ? ` · RM ${e.rm} kg${e.weighted ? " de lastro" : ""} · ${e.rmSource === "historical" ? "histórico provisório" : "atual"}`
         : " · RM não informado"}
-      {e.weighted && e.referenceBodyweight !== undefined
-        ? ` · PC de referência ${e.referenceBodyweight} kg`
-        : ""}{" "}
+      {" "}
       · RPE ≤ {e.rpe}
       {e.scheduledPercent !== undefined &&
       e.percent !== undefined &&

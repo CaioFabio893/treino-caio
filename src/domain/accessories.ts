@@ -1,4 +1,5 @@
 import type { Exercise, Readiness, Session } from "./model";
+import { DELOAD_WEEKS } from "./waves";
 
 // IDs originais continuam representando o mesmo exercício nos backups antigos.
 const GROUPS = [
@@ -63,7 +64,7 @@ export function varyAccessories(exercises: Exercise[], week: number) {
       plank: [30, 45],
     };
     const [reps, repsMax] = ranges[e.id];
-    const reduced = [4, 8, 9, 10, 11].includes(week);
+    const reduced = DELOAD_WEEKS.includes(week);
     return {
       ...e,
       id,
@@ -71,7 +72,7 @@ export function varyAccessories(exercises: Exercise[], week: number) {
       reps,
       repsMax,
       sets: week === 11 ? 1 : reduced ? Math.min(2, e.sets) : e.sets,
-      rpe: [4, 8, 11].includes(week) ? 6 : e.rpe,
+      rpe: DELOAD_WEEKS.includes(week) ? 6 : e.rpe,
       note: `Bloco ${block + 1}: mantenha esta variação durante quatro semanas. Complete a faixa antes de aumentar a carga. Carga de outra variação não é transferida.${e.perSide ? " Quantidade por lado; carga dos halteres por mão." : e.id === "farmer" ? " Distância por percurso; carga por mão." : ""}`,
     };
   });
