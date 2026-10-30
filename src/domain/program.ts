@@ -189,6 +189,7 @@ export function makeProgramPlan(
   if (day === 3)
     exercises = [
       heavy("dip", "Dip com lastro", true),
+      heavy("bench", "Supino reto com barra"),
       exercise(
         "overhead-press",
         "Desenvolvimento militar (strict ou push press)",
@@ -202,10 +203,6 @@ export function makeProgramPlan(
           rest: 150,
         },
       ),
-      accessory("incline-db", "Supino inclinado com halteres", 3, 8, {
-        repsMax: 12,
-        note: "Carga por mão.",
-      }),
       accessory("lateral", "Elevação lateral", 3, 15),
       accessory("triceps-rope", "Tríceps na polia", 2, 10, { repsMax: 15 }),
     ];
@@ -234,6 +231,7 @@ export function makeProgramPlan(
     exercises = [
       volume("dip-volume", "Dip — volume", true),
       volume("paused-squat", "Back squat pausado"),
+      volume("bench-volume", "Supino reto — volume"),
       exercise("db-clean-press", "Clean and press com halteres", 4, 5, {
         priority: 1,
         rest: 120,
@@ -247,7 +245,6 @@ export function makeProgramPlan(
         { unit: "meters", priority: 1, rest: 120 },
       ),
       accessory("lateral", "Elevação lateral", 3, 15),
-      accessory("triceps-overhead", "Tríceps acima da cabeça na polia", 3, 12),
     ];
   exercises = varyAccessories(exercises, week).map((e) => {
     const waved = applyWave(e, week);
@@ -265,24 +262,26 @@ export function makeProgramPlan(
               : 8,
     };
   });
-  const pr = week === 12 && day <= 4;
+  const pr = week === 12 && (day <= 4 || day === 6);
   if (week === 12) {
-    const tests = ["pullup", "squat", "dip", "deadlift"] as const;
+    const tests = ["pullup", "squat", "dip", "deadlift", "", "bench"] as const;
     const names = [
       "Barra fixa com lastro",
       "Back squat",
       "Dip com lastro",
       "Levantamento terra",
+      "",
+      "Supino reto com barra",
     ];
     exercises =
-      day <= 4
-        ? [
+      day === 5
+        ? []
+        : [
             applyWave(
               heavy(tests[day - 1], names[day - 1], [1, 3].includes(day)),
               week,
             ),
-          ]
-        : [];
+          ];
   }
   const plan: Plan = {
     program: PROGRAM_ID,
@@ -291,16 +290,16 @@ export function makeProgramPlan(
     name: `Treino ${"ABCDEF"[day - 1]}`,
     focus:
       week === 12 && day === 6
-        ? "Descanso e recuperação"
+        ? "Teste de supino"
         : week === 12 && day === 5
           ? "Teste de one-arm"
           : [
               "One-arm força + barra pesada",
               "Agachamento pesado + pernas",
-              "Dip pesado + press + one-arm leve",
+              "Dip pesado + supino + press + one-arm leve",
               "Terra + posterior + carries",
               "One-arm volume + costas",
-              "Dip de volume + squat 2 + strongman",
+              "Dip e supino de volume + squat 2 + strongman",
             ][day - 1],
     pull: [1, 3, 5].includes(day),
     pr,

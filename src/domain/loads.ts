@@ -11,6 +11,7 @@ const PARENTS: Record<string, string> = {
   "pullup-volume": "pullup",
   "dip-volume": "dip",
   "paused-squat": "squat",
+  "bench-volume": "bench",
 };
 const MAIN = ["squat", "deadlift", "bench", "pullup", "dip"];
 
@@ -151,6 +152,7 @@ export function percentageFor(e: Exercise, week: number) {
   if (MAIN.includes(e.id)) return HEAVY_PERCENT[week - 1];
   if (
     e.id === "paused-squat" ||
+    e.id === "bench-volume" ||
     e.id === "pullup-volume" ||
     e.id === "dip-volume"
   )

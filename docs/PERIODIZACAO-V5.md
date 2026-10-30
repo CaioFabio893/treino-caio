@@ -7,13 +7,13 @@ Programa `oapu-strength-waves-v5`. Substitui a distribuição A–F e as ondas d
 |---|---|---|
 | Seg | A | One-arm força, barra lastrada pesada, remada, rosca, hang isométrico |
 | Ter | B | Back squat pesado, leg press, extensora, panturrilha em pé |
-| Qua | C | One-arm técnico leve, dip pesado, desenvolvimento, supino inclinado com halteres, lateral, tríceps |
+| Qua | C | One-arm técnico leve, dip pesado, supino reto pesado, desenvolvimento, lateral, tríceps |
 | Qui | D | Terra (convencional ou trap bar) sozinho, terra romeno, flexora, farmer walk, abdômen |
 | Sex | E | One-arm volume excêntrico, barra de volume, puxada neutra, remada unilateral, facepull, rosca |
-| Sáb | F | Dip de volume, squat pausado, clean and press com halteres, sled/carry, lateral, tríceps overhead |
+| Sáb | F | Dip de volume, squat pausado, supino reto de volume, clean and press com halteres, sled/carry, lateral |
 | Dom | — | Descanso |
 
-Frequências: one-arm 3× (A/C/E), dip 2× (C/F), agachamento 2× (B/F), terra 1× em dia próprio. Strongman de academia: farmer walk, clean and press com halteres, sled push/drag ou carry com sandbag/anilha.
+Frequências: one-arm 3× (A/C/E), dip 2× (C/F), supino reto 2× (C pesado, F volume), agachamento 2× (B/F), terra 1× em dia próprio. Supino segue a mesma onda do squat/dip (% do RM de supino do perfil) e tem teste de PR no sábado da S12. Strongman de academia: farmer walk, clean and press com halteres, sled push/drag ou carry com sandbag/anilha.
 
 ## Fases
 S1–3 reentrada (60 → 65%, RPE 6–7; o app já estava na S2 de retorno leve), S4–6 acumulação, S7 deload, S8–10 força/pico, S11 deload e taper, S12 teste conservador. Antes da S12, o histórico dita o teto de carga (aumento máximo de um incremento por execução completa); o calendário não força saltos.

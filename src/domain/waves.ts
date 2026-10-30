@@ -84,6 +84,8 @@ const WAVES: Record<string, Wave[]> = {
   squat: HEAVY,
   dip: HEAVY,
   pullup: HEAVY,
+  bench: HEAVY,
+  "bench-volume": VOLUME,
   "paused-squat": VOLUME,
   "dip-volume": VOLUME,
   "pullup-volume": VOLUME,

@@ -104,18 +104,13 @@ describe("ciclo de 12 semanas", () => {
       makePlan(7, 6).exercises.find((e) => e.id === "dip-volume")?.rpe,
     ).toBeLessThanOrEqual(5);
   });
-  it("S12 separa quatro testes, teste de one-arm na sexta e descanso no sábado", () => {
-    expect([1, 2, 3, 4].map((d) => makePlan(12, d).exercises[0].id)).toEqual([
-      "pullup",
-      "squat",
-      "dip",
-      "deadlift",
-    ]);
+  it("S12 separa cinco testes e deixa a sexta para o teste de one-arm", () => {
+    expect(
+      [1, 2, 3, 4, 6].map((d) => makePlan(12, d).exercises[0].id),
+    ).toEqual(["pullup", "squat", "dip", "deadlift", "bench"]);
     expect(makePlan(12, 1).exercises[0].setTargets).toHaveLength(3);
-    for (const d of [5, 6]) {
-      expect(makePlan(12, d).exercises).toHaveLength(0);
-      expect(makePlan(12, d).pr).toBe(false);
-    }
+    expect(makePlan(12, 5).exercises).toHaveLength(0);
+    expect(makePlan(12, 5).pr).toBe(false);
   });
   it("calendário considera segunda e dias civis, não diferença de horário/DST", () => {
     expect(monday(new Date("2026-10-18T12:00:00"))).toBe("2026-10-12");

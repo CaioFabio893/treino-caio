@@ -60,6 +60,8 @@ describe("programação de força, hipertrofia e one-arm", () => {
       expect(makePlan(week, 2).exercises[0].id).toBe("squat");
       expect(makePlan(week, 4).exercises[0].id).toBe("deadlift");
     }
+    expect(makePlan(5, 3).exercises[1].id).toBe("bench");
+    expect(makePlan(5, 6).exercises.map((e) => e.id)).toContain("bench-volume");
     for (const day of [1, 2, 3, 5, 6])
       expect(
         makePlan(5, day).exercises.some((e) => e.id === "deadlift"),
