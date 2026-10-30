@@ -7,8 +7,8 @@ Programa `oapu-strength-waves-v5`. Substitui a distribuição A–F e as ondas d
 |---|---|---|
 | Seg | A | One-arm força, barra lastrada pesada, remada, rosca, hang isométrico |
 | Ter | B | Back squat pesado, leg press, extensora, panturrilha em pé |
-| Qua | C | One-arm técnico leve, dip pesado, supino reto pesado, desenvolvimento, lateral, tríceps |
-| Qui | D | Terra (convencional ou trap bar) sozinho, terra romeno, flexora, farmer walk, abdômen |
+| Qua | C | One-arm técnico leve, dip pesado, supino reto pesado, lateral, tríceps |
+| Qui | D | Terra (convencional ou trap bar), desenvolvimento militar, flexora, farmer walk, abdômen |
 | Sex | E | One-arm volume excêntrico, barra de volume, puxada neutra, remada unilateral, facepull, rosca |
 | Sáb | F | Dip de volume, squat pausado, supino reto de volume, clean and press com halteres, sled/carry, lateral |
 | Dom | — | Descanso |

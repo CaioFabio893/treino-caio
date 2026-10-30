@@ -190,6 +190,12 @@ export function makeProgramPlan(
     exercises = [
       heavy("dip", "Dip com lastro", true),
       heavy("bench", "Supino reto com barra"),
+      accessory("lateral", "Elevação lateral", 3, 15),
+      accessory("triceps-rope", "Tríceps na polia", 2, 10, { repsMax: 15 }),
+    ];
+  if (day === 4)
+    exercises = [
+      heavy("deadlift", "Levantamento terra (convencional ou trap bar)"),
       exercise(
         "overhead-press",
         "Desenvolvimento militar (strict ou push press)",
@@ -203,13 +209,6 @@ export function makeProgramPlan(
           rest: 150,
         },
       ),
-      accessory("lateral", "Elevação lateral", 3, 15),
-      accessory("triceps-rope", "Tríceps na polia", 2, 10, { repsMax: 15 }),
-    ];
-  if (day === 4)
-    exercises = [
-      heavy("deadlift", "Levantamento terra (convencional ou trap bar)"),
-      accessory("rdl", "Terra romeno", 3, 8),
       accessory("hamstring", "Mesa flexora", 3, 12),
       accessory("farmer", "Farmer walk pesado", 4, 30, {
         repsMax: 40,
@@ -296,8 +295,8 @@ export function makeProgramPlan(
           : [
               "One-arm força + barra pesada",
               "Agachamento pesado + pernas",
-              "Dip pesado + supino + press + one-arm leve",
-              "Terra + posterior + carries",
+              "Dip pesado + supino + one-arm leve",
+              "Terra + press + posterior + carries",
               "One-arm volume + costas",
               "Dip e supino de volume + squat 2 + strongman",
             ][day - 1],
