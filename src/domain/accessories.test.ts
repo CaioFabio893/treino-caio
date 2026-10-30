@@ -7,7 +7,7 @@ import {
 import { addSet, initialState, makePlan, startSession } from "./engine";
 import type { Readiness } from "./model";
 
-function execution(id = "row", amount = 12, rpe = 7, count = 3) {
+function execution(id = "row", amount = 12, rpe = 7, count?: number) {
   let s = startSession(initialState(), makePlan(3, 1), 100000);
   if (id === "farmer")
     s.plan.exercises.push({
@@ -21,7 +21,7 @@ function execution(id = "row", amount = 12, rpe = 7, count = 3) {
       unit: "meters",
     });
   const e = s.plan.exercises.find((x) => x.id === id)!;
-  for (let index = 0; index < count; index++)
+  for (let index = 0; index < (count ?? e.sets); index++)
     s = addSet(
       s,
       e,
@@ -53,8 +53,8 @@ describe("acessórios por bloco e progressão optativa", () => {
   });
   it("reduz acessórios no deload, peaking, taper e os retira dos testes PR", () => {
     expect(makePlan(7, 1).exercises[1]).toMatchObject({ sets: 2, rpe: 6 });
-    expect(makePlan(9, 1).exercises[1].sets).toBe(3);
-    expect(makePlan(11, 1).exercises[1].sets).toBe(1);
+    expect(makePlan(9, 1).exercises[1].sets).toBe(4);
+    expect(makePlan(11, 1).exercises[1].sets).toBe(2);
     expect(makePlan(12, 1).exercises.map((e) => e.id)).toEqual(["pullup"]);
   });
   it("propõe um incremento e volta à base apenas com todas as séries no topo", () => {

@@ -44,7 +44,7 @@ Desenvolvimento: 3×8 55/57,5/60/60%, 4×6 65/67,5%, S7 2×6 52,5%, 4×5 72,5%, 
 
 One-arm: sem % (não há RM bilateral para unilateral). RPE e assistência mandam; ao completar todas as séries no RPE, reduzir cerca de 2,5% do peso corporal de assistência na semana seguinte. Detalhes por semana em `oapuProtocol` (`program.ts`). Sexta da S12 é o teste de one-arm.
 
-Secundários (hipertrofia por RPE, dupla progressão): `hypertrophySets` em `waves.ts` e RPE por faixa de semana em `program.ts`.
+Secundários (hipertrofia por RPE, dupla progressão): séries por semana 3, 3, 4, 4, 4, 4, 2 (deload), 4, 4, 3, 2 (taper), 0 (S12); isoladores (tríceps, rosca, facepull, abdômen, hang) uma série a menos, mínimo 2. `hypertrophySets` em `waves.ts` e RPE por faixa de semana em `program.ts`.
 
 ## Cálculo (revisado)
 - Percentual só sobre a carga: carga = RM de lastro × %, arredondada para baixo no incremento. O peso corporal não entra na conta (barra e dip usam o RM de lastro do perfil); assistência só existe no one-arm, por RPE.

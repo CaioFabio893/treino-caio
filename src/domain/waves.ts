@@ -140,13 +140,15 @@ export function waveSummary(e: Exercise) {
     .join(" + ");
 }
 
+// Séries semanais dos secundários: base por semana; compostos usam a base,
+// isoladores menores (tríceps, rosca, facepull, abdômen, hang) uma série a menos.
+const HYPERTROPHY_BASE = [3, 3, 4, 4, 4, 4, 2, 4, 4, 3, 2, 0];
+const ISOLATION = ["triceps-rope", "triceps-overhead", "curl", "facepull", "cable-crunch", "hang-hold"];
+
 export function hypertrophySets(e: Exercise, week: number) {
-  if (week === 12) return 0;
-  if (week <= 2 || e.id === "triceps-rope") return 2;
-  if (week === 7) return 2;
-  if (week === 11) return 1;
-  const family = e.id.replace(/-cable$|-machine$|-seated$/g, "");
-  if ([9, 10].includes(week)) return family === "lateral" ? 2 : 3;
-  if (week === 6 && ["leg-press", "calf-standing"].includes(e.id)) return 4;
-  return 3;
+  const base = HYPERTROPHY_BASE[week - 1];
+  if (base === 0) return 0;
+  const family = e.id.replace(/-cable$|-machine$|-seated$|-hammer$/g, "");
+  if (ISOLATION.includes(family)) return Math.max(2, base - 1);
+  return base;
 }
